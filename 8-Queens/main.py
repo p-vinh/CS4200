@@ -21,7 +21,7 @@ class Board:
         # 1. Queen is in the midde of the board
         # 2. Queen is in the edge of the board
         # 3. Queen is in the corner of the board
-
+    
         # check surrounding cells of the piece
 
         # check vertical
