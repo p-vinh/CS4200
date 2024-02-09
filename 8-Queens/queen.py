@@ -9,6 +9,19 @@ diagonal
 """
 import unittest
 import pygame
+import time
+
+SQUARE_SIZE = 50
+GRID_SIZE = 8
+QUEEN = pygame.transform.scale(pygame.image.load('8-Queens\images\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
+
+WHITE = (255, 255, 255)
+BROWN = (139, 69, 19)
+
+pygame.init()
+screen = pygame.display.set_mode((GRID_SIZE * SQUARE_SIZE, GRID_SIZE * SQUARE_SIZE))
+
+
 
 class Eight_Queens:
     def __init__(self):
@@ -68,13 +81,14 @@ class Eight_Queens:
 
     def solve(self, col):
         if self.queens == 8:
-            print("8 Queens have been placed")
-            return self.get_all_positions()
+            return True
 
         for row in range(8):
             if self.is_safe(row, col):
                 self.board[row][col] = 1
                 self.queens += 1
+
+                self.draw_board()
 
                 if self.solve(col + 1):
                     return True
@@ -82,7 +96,15 @@ class Eight_Queens:
                 self.board[row][col] = 0
                 self.queens -= 1
 
+                self.draw_board()
+
         return False
+
+    def draw_board(self):
+        for x, y in self.get_all_positions():
+            screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
+            time.sleep(0.2)
+        pygame.display.flip()
 
     def get_all_positions(self):
         return [(i, j) for i in range(8) for j in range(8) if self.board[i][j] == 1]
@@ -91,37 +113,15 @@ class Eight_Queens:
         return "\n".join(" ".join(str(cell) for cell in row) for row in self.board)
 
 
-SQUARE_SIZE = 50
-GRID_SIZE = 8
-QUEEN = pygame.transform.scale(pygame.image.load('8-Queens\images\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
-queen_width, queen_height = QUEEN.get_size()
 
-WHITE = (255, 255, 255)
-BROWN = (139, 69, 19)
 
-pygame.init()
-screen = pygame.display.set_mode((GRID_SIZE * SQUARE_SIZE, GRID_SIZE * SQUARE_SIZE))
-
-for x in range(GRID_SIZE):
-    for y in range(GRID_SIZE):
-        rect = pygame.Rect(x*SQUARE_SIZE, y*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
-        pygame.draw.rect(screen, WHITE if (x+y) % 2 == 0 else BROWN, rect)
-
-pygame.display.flip()
-
-running = True
-while running:
+if __name__ == "__main__":
+    for x in range(GRID_SIZE):
+        for y in range(GRID_SIZE):
+            rect = pygame.Rect(x*SQUARE_SIZE, y*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+            pygame.draw.rect(screen, WHITE if (x+y) % 2 == 0 else BROWN, rect)
+    solver = Eight_Queens()
+    solver.solve(0)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
-        solver = Eight_Queens()
-        solver.solve(0)
-    if pygame.key.get_pressed()[pygame.K_SPACE]:
-         
-        for x, y in solver.get_all_positions():
-            screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
-
-        pygame.display.flip()
-
-pygame.quit()
-
+            pygame.quit()
