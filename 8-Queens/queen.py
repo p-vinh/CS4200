@@ -84,8 +84,8 @@ class Eight_Queens:
         self.board[row][col] = 1
         self.queens += 1
 
-
-    def solve(self, col):
+    # 2 Different ways to solve the 8 queens problem
+    def solve_col(self, col):
         # GUI Logic
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -97,6 +97,8 @@ class Eight_Queens:
                         
         # base case
         if self.queens == 8:
+            self.draw_board()
+            print(self)
             return True
 
         for row in range(8):
@@ -106,9 +108,45 @@ class Eight_Queens:
         
                 if (not self.skip):
                     self.draw_board()
+                    time.sleep(0.5)
+                
+                if self.solve_col(col + 1):
+                    return True
+
+                # backtrack if solve returns False
+                self.board[row][col] = 0
+                self.queens -= 1
+
+            self.draw_board()
+
+        return False
+    
+    def solve_row(self, row):
+        # GUI Logic
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if button.collidepoint(event.pos):
+                        self.skip = True
+                        
+        # base case
+        if self.queens == 8:
+            self.draw_board()
+            print(self)
+            return True
+
+        for col in range(8):
+            if self.is_safe(row, col):
+                self.board[row][col] = 1
+                self.queens += 1
+        
+                if (not self.skip):
+                    self.draw_board()
                     time.sleep(0.2)
                 
-                if self.solve(col + 1):
+                if self.solve_row(row + 1):
                     return True
 
                 # backtrack if solve returns False
@@ -119,10 +157,13 @@ class Eight_Queens:
 
         return False
 
+
     def draw_board(self):
         self.reset()
-        for x, y in self.get_all_positions():
-            screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
+        for x in range(GRID_SIZE):
+            for y in range(GRID_SIZE):
+                if self.board[x][y] == 1:
+                    screen.blit(QUEEN, (y*SQUARE_SIZE + 6, x*SQUARE_SIZE + 5))
         pygame.display.flip()
         
     def reset(self):
@@ -131,8 +172,7 @@ class Eight_Queens:
                 rect = pygame.Rect(x*SQUARE_SIZE, y*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
                 pygame.draw.rect(screen, LIGHT_BROWN if (x+y) % 2 == 0 else BROWN, rect)
                 
-    def get_all_positions(self):
-        return [(i, j) for i in range(8) for j in range(8) if self.board[i][j] == 1]
+
 
     def __str__(self):
         return "\n".join(" ".join(str(cell) for cell in row) for row in self.board)
@@ -156,7 +196,7 @@ if __name__ == "__main__":
     pygame.display.flip()
 
     solver = Eight_Queens()
-    solver.solve(0)
+    print(solver.solve_col(0))
     
     while True:
         for event in pygame.event.get():
