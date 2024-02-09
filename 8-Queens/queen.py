@@ -7,26 +7,32 @@ attack each other by being in
 the same row, column or
 diagonal
 """
-import unittest
 import pygame
 import time
+from pygame.locals import *
 
 SQUARE_SIZE = 50
 GRID_SIZE = 8
-QUEEN = pygame.transform.scale(pygame.image.load('8-Queens\images\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
+QUEEN = pygame.transform.scale(pygame.image.load('8-Queens\\images\\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
 
-WHITE = (255, 255, 255)
+LIGHT_BROWN = (164,124,72)
 BROWN = (139, 69, 19)
+WHITE = (255, 255, 255)
 
 pygame.init()
-screen = pygame.display.set_mode((GRID_SIZE * SQUARE_SIZE, GRID_SIZE * SQUARE_SIZE))
+pygame.font.init()
+pygame.display.set_caption('8-Queens')
 
-
+screen_width = GRID_SIZE * SQUARE_SIZE + 200
+screen_height = GRID_SIZE * SQUARE_SIZE
+screen = pygame.display.set_mode((screen_width, screen_height))
+font = pygame.font.Font(None, 36)
 
 class Eight_Queens:
     def __init__(self):
         self.board = [[0 for _ in range(8)] for _ in range(8)]
         self.queens = 0
+        self.skip = False
 
     def is_safe(self, row, col):
         # 3 Possible cases:
@@ -80,6 +86,16 @@ class Eight_Queens:
 
 
     def solve(self, col):
+        # GUI Logic
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if button.collidepoint(event.pos):
+                        self.skip = True
+                        
+        # base case
         if self.queens == 8:
             return True
 
@@ -87,25 +103,34 @@ class Eight_Queens:
             if self.is_safe(row, col):
                 self.board[row][col] = 1
                 self.queens += 1
-
-                self.draw_board()
-
+        
+                if (not self.skip):
+                    self.draw_board()
+                    time.sleep(0.2)
+                
                 if self.solve(col + 1):
                     return True
 
+                # backtrack if solve returns False
                 self.board[row][col] = 0
                 self.queens -= 1
 
-                self.draw_board()
+            self.draw_board()
 
         return False
 
     def draw_board(self):
+        self.reset()
         for x, y in self.get_all_positions():
             screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
-            time.sleep(0.2)
         pygame.display.flip()
-
+        
+    def reset(self):
+        for x in range(GRID_SIZE):
+            for y in range(GRID_SIZE):
+                rect = pygame.Rect(x*SQUARE_SIZE, y*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+                pygame.draw.rect(screen, LIGHT_BROWN if (x+y) % 2 == 0 else BROWN, rect)
+                
     def get_all_positions(self):
         return [(i, j) for i in range(8) for j in range(8) if self.board[i][j] == 1]
 
@@ -119,9 +144,24 @@ if __name__ == "__main__":
     for x in range(GRID_SIZE):
         for y in range(GRID_SIZE):
             rect = pygame.Rect(x*SQUARE_SIZE, y*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
-            pygame.draw.rect(screen, WHITE if (x+y) % 2 == 0 else BROWN, rect)
+            pygame.draw.rect(screen, LIGHT_BROWN if (x+y) % 2 == 0 else BROWN, rect)
+    
+    button_x = screen_width - 130
+    button_y = screen_height - 150
+
+    button = pygame.Rect(button_x, button_y, 100, 50)
+    text = font.render('Skip', True, WHITE)
+    screen.blit(text, (button_x, button_y))
+        
+    pygame.display.flip()
+
     solver = Eight_Queens()
     solver.solve(0)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
+    
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        pygame.display.flip()
+                        
