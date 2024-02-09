@@ -196,7 +196,7 @@ if __name__ == "__main__":
     pygame.display.flip()
 
     solver = Eight_Queens()
-    print(solver.solve_col(0))
+    print(solver.solve_row(0))
     
     while True:
         for event in pygame.event.get():
