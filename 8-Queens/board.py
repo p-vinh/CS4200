@@ -28,7 +28,7 @@ while running:
          
         solver = queen.Eight_Queens()
 
-        for x, y in solver.solve():
+        for x, y in solver.solve(0):
             screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
         pygame.display.flip()
 

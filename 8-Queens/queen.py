@@ -13,66 +13,63 @@ class Eight_Queens:
         self.board = [[0 for _ in range(8)] for _ in range(8)]
         self.queens = 0
 
+    # Checks if a queen can be placed at the current position
     def is_safe(self, row, col):
-        # check if a queen can be placed at row, col
-        # return True if it's safe, False otherwise
-
         # 3 Possible cases:
         # 1. Queen is in the midde of the board
         # 2. Queen is in the edge of the board
         # 3. Queen is in the corner of the board
     
-        # check surrounding cells of the piece
+        # check surrounding cells of the current cell for a queen
+        surrounding_cells = [(row, col - 1), (row, col + 1), (row - 1, col), (row + 1, col), (row - 1, col - 1), (row - 1, col + 1), (row + 1, col - 1), (row + 1, col + 1)]
 
-        # check vertical
-
-        # check horizontal
-
-        # check diagonal
-
+        for x, y in surrounding_cells:
+            if 0 <= x < 8 and 0 <= y < 8:
+                if self.board[x][y] == 1:
+                    return False
         
+        # check if there is a queen in the same column
+        col = sum([self.board[i][col] for i in range(8)])
+        if (col > 1):
+            return False
+
+        # check if there is a queen in the same row
+        row = sum(self.board[row])
+        if (row > 1):
+            return False
+
+        # check if there is a queen in the same diagonal
+        for i in range(8):
+            for j in range(8):
+                if (i + j == row + col) or (i - j == row - col) and self.board[i][j] == 1:
+                    return False
         return True
-    def place_queen(self, col):
-        
-        # base case
-        if col >= 8:
+
+    # debug function
+    def place_queen(self, row, col):
+        self.board[row][col] = 1
+        self.queens += 1
+
+
+    def solve(self, col):
+        self.board.__str__()
+
+        if self.queens == 8:
+            print("8 Queens have been placed")
             return True
 
-        pass
-
-    def solve(self):
-        # solve the 8-queens problem using breadth-first search
-        fringe = []
-        fringe.append((0,0))    
-
-        while fringe:
-            # pop the first element in the fringe (queue)
-            row, col = fringe.pop(0)
-            
-            # place a queen at the current position if it's safe
+        for row in range(8):
             if self.is_safe(row, col):
-
-                # 1 represents a queen and increment the number of queens
                 self.board[row][col] = 1
                 self.queens += 1
 
-                # place the next queen in the next column if it's safe then append the position to the fringe
-                if self.place_queen(col+1):
-                    results.append((row, col))
-                self.board.__str__()
-                # remove the queen and decrement the number of queens if the next queen can't be placed
+                if self.solve(col + 1):
+                    return True
+
                 self.board[row][col] = 0
                 self.queens -= 1
-            if self.queens < 8:
-                if row < 7:
-                    fringe.append((row+1, col))
-                if col < 7:
-                    fringe.append((row, col+1))
-            else: # 8 queens have been placed
-                break
 
-
-        return fringe
+        return False
 
     def __str__(self):
         return "\n".join(" ".join(str(cell) for cell in row) for row in self.board)
@@ -80,6 +77,7 @@ class Eight_Queens:
 
 if __name__ == "__main__":
     board = Eight_Queens()
-    board.solve()
+    # Test cases for is_safe
+
 
     
