@@ -1,4 +1,5 @@
 import pygame
+import queen
 
 SQUARE_SIZE = 50
 GRID_SIZE = 8
@@ -23,11 +24,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    # Draw the queens by pressing spacebar
-    if pygame.key.get_pressed()[pygame.K_SPACE]: 
-        for x in range(GRID_SIZE):
-            for y in range(GRID_SIZE):
-                screen.blit(QUEEN, (x*SQUARE_SIZE, y*SQUARE_SIZE))
+    if pygame.key.get_pressed()[pygame.K_SPACE]:
+         
+        solver = queen.Eight_Queens()
+
+        for x, y in solver.solve():
+            screen.blit(QUEEN, (x*SQUARE_SIZE + 6, y*SQUARE_SIZE + 5))
         pygame.display.flip()
 
 pygame.quit()
