@@ -13,7 +13,7 @@ from pygame.locals import *
 
 SQUARE_SIZE = 50
 GRID_SIZE = 8
-QUEEN = pygame.transform.scale(pygame.image.load('8-Queens\\images\\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
+QUEEN = pygame.transform.scale(pygame.image.load('.\\images\\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
 
 LIGHT_BROWN = (164,124,72)
 BROWN = (139, 69, 19)
