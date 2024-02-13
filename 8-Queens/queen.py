@@ -13,24 +13,26 @@ from pygame.locals import *
 
 SQUARE_SIZE = 50
 GRID_SIZE = 8
-try :
-    QUEEN = pygame.transform.scale(pygame.image.load('.\\images\\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
-    print(QUEEN.get_size())
-except FileNotFoundError:
-    QUEEN = pygame.transform.scale(pygame.surface.Surface((50, 50)), (SQUARE_SIZE, SQUARE_SIZE))
+    
+pygame.init()
+pygame.font.init()
+pygame.display.set_caption('8-Queens')
 
 LIGHT_BROWN = (164,124,72)
 BROWN = (139, 69, 19)
 WHITE = (255, 255, 255)
 
-pygame.init()
-pygame.font.init()
-pygame.display.set_caption('8-Queens')
-
 screen_width = GRID_SIZE * SQUARE_SIZE + 200
 screen_height = GRID_SIZE * SQUARE_SIZE
 screen = pygame.display.set_mode((screen_width, screen_height))
 font = pygame.font.Font(None, 36)
+
+try:
+    QUEEN = pygame.transform.scale(pygame.image.load('.\\images\\chess-queen.svg'), (SQUARE_SIZE, SQUARE_SIZE))
+except FileNotFoundError:
+    print("Queen image not found, using text instead")
+    text = font.render('Q', False, (0, 0, 0))
+    QUEEN = pygame.transform.scale(text, (SQUARE_SIZE - 10, SQUARE_SIZE - 5))
 
 class Eight_Queens:
     def __init__(self):
