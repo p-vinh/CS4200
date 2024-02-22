@@ -331,7 +331,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
         return valMinMax;
     }
 
-    private Pair<Integer, Pair<Piece, Square>> MinMax_SelectPiece(boolean turnSelector, int depthLevel, String prevPos, Stack<String> futureMoves) {
+    private Pair<Integer, Pair<Piece, Square>> MinMax_SelectPiece(boolean turnSelector, int depthLevel, String prevPos, Stack<String> futureMoves, int alpha, int beta) {
         LinkedList<Piece> pieces = null;
         if (turnSelector) { pieces = Wpieces; }
         else { pieces = Bpieces; }
@@ -349,7 +349,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
                 Stack<String> tempFutureMoves = new Stack<String>();
                 Pair<Integer, Square> r =
                         MinMax_SelectSquare(pieceTemp, turnSelector, depthLevel + 1,
-                                prevPos + pieceTemp.getPositionName() + "\r\n", tempFutureMoves);
+                                prevPos + pieceTemp.getPositionName() + "\r\n", tempFutureMoves, alpha, beta);
                 int valMinMax = r.getKey();
                 Square sqTempNext = r.getValue();
                 if ((turnSelector) && ((oppSq == null) || (valMinMax < oppMinMaxVal))) {
@@ -384,7 +384,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
         return (new Pair<Integer, Pair<Piece, Square>>(oppMinMaxVal, new Pair<Piece, Square>(oppPiece, oppSq)));
     }
 
-    private Pair<Integer, Square> MinMax_SelectSquare(Piece chessPiece, boolean turnSelector, int depthLevel, String prevPos, Stack<String> futureMoves) {
+    private Pair<Integer, Square> MinMax_SelectSquare(Piece chessPiece, boolean turnSelector, int depthLevel, String prevPos, Stack<String> futureMoves, int alpha, int beta) {
 
         // Get the Game Tree Depth from UI
         String strDepth = g.depth.getText();
@@ -432,9 +432,23 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
                 if (!success) continue;
 
                 int valMinMax = 0;
-                Pair<Integer, Pair<Piece, Square>> r = MinMax_SelectPiece(
-                        !turnSelector, depthLevel, prevPos, tempFutureMoves);
-                valMinMax = r.getKey();
+                if (alpha < beta) {
+                    Pair<Integer, Pair<Piece, Square>> r = MinMax_SelectPiece(
+                            !turnSelector, depthLevel, prevPos, tempFutureMoves, alpha, beta);
+                    valMinMax = r.getKey();
+                    if (turnSelector) {
+                        if (valMinMax > alpha) {
+                            alpha = valMinMax;
+                        }
+                    } else {
+                        if (valMinMax < beta) {
+                            beta = valMinMax;
+                        }
+                    }
+                } else {
+                    valMinMax = MinMax_CalcVal(turnSelector);
+                }  
+                
 
                 // Undo the move
                 chessPiece.move(currSq);
@@ -480,7 +494,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
 
         Stack<String> tempFutureMoves = new Stack<String>();
         // Try to find best square to move the King
-        Pair<Integer, Square> r = MinMax_SelectSquare(Bk, false, 0, Bk.getPositionName() + "\r\n", tempFutureMoves);
+        Pair<Integer, Square> r = MinMax_SelectSquare(Bk, false, 0, Bk.getPositionName() + "\r\n", tempFutureMoves, Integer.MIN_VALUE, Integer.MAX_VALUE);
         int valMinMax = r.getKey();
         Square sq = r.getValue();
 
@@ -625,7 +639,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
                             g.buttons.update(g.buttons.getGraphics());
 
                             Stack<String> futureMoves = new Stack<String>();
-                            Pair<Integer, Pair<Piece, Square>> r = MinMax_SelectPiece(false, 0, newText, futureMoves);
+                            Pair<Integer, Pair<Piece, Square>> r = MinMax_SelectPiece(false, 0, newText, futureMoves, Integer.MIN_VALUE, Integer.MAX_VALUE);
                             Pair<Piece, Square> m = r.getValue();
                             currPiece = m.getKey();
                             boolean success = takeTurnEx(m.getKey(), m.getValue(), whiteTurn, newText, 0);
