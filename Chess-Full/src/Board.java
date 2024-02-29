@@ -401,7 +401,7 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
                 " Val: " + Integer.toString(oppMinMaxVal));
 
         if (beta <= alpha) {
-            return (new Pair<Integer, Pair<Piece, Square>>(alpha, null));
+            return (new Pair<Integer, Pair<Piece, Square>>(0, null));
         }
 
         return (new Pair<Integer, Pair<Piece, Square>>(oppMinMaxVal, new Pair<Piece, Square>(oppPiece, oppSq)));
