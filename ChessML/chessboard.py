@@ -1,14 +1,9 @@
 import chess
+import chess.pgn
 import numpy as np
 import pygame as pg
 import math
 import random
-
-
-class ChessPiece:
-    def __init__(self, image, rect):
-        self.image = image
-        self.rect = rect
 
 
 board = chess.Board()
@@ -45,17 +40,10 @@ images = {
     "k": pg.image.load("pieces/bking.png"),
 }
 
-pieces = []
 
-for row in range(8):
-    for col in range(8):
-        piece = board.piece_at(chess.square(col, 7 - row))
-        if piece is not None:
-            rect = pg.Rect(col * 50 + offset, row * 50, 50, 50)
-            pieces.append(ChessPiece(images[piece.symbol()], rect))
+
 
 def drawBoard():
-    letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
     numbers = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
     for row in range(8):
@@ -73,30 +61,52 @@ def drawBoard():
                     pg.Rect(col * 50 + offset, row * 50, 50, 50),
                 )
 
-            if row == 0:
-                text = font.render(letters[col], True, (255, 255, 255))
-                screen.blit(text, (col * 50 + 25, 400))
+                
             if col == 0:
-                text = font.render(numbers[row], True, (255, 255, 255))
+                if board.turn:
+                    text = font.render("", True, (255, 255, 255))
+                    screen.blit(text, (col * 50 + 15, row * 50 + 30))
+                    text = font.render(str(8 - row), True, (255, 255, 255))
+                else:
+                    # Clear text first
+                    text = font.render("", True, (255, 255, 255))
+                    screen.blit(text, (col * 50 + 15, row * 50 + 30))
+                    text = font.render(numbers[row], True, (255, 255, 255))
+                    
                 screen.blit(text, (col * 50 + 15, row * 50 + 30))
 
+letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
+for row in range(8):
+    for col in range(8):
+        if row == 0:
+            text = font.render(letters[col], True, (255, 255, 255))
+            screen.blit(text, (col * 50 + 25, 400))
 
 def drawPieces(board):
-    for piece in pieces:
-        screen.blit(piece.image, piece.rect)
-
+    for row in range(8):
+        for col in range(8):
+            piece = board.piece_at(chess.square(col, 7 - row))
+            if piece is not None:
+                screen.blit(images[piece.symbol()], (col * 50 + offset, row * 50))
 
 temp_move = ""
+
+
+
 while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
             exit()
+  
         elif event.type == pg.KEYDOWN:
             print(board.legal_moves)
             if event.key == pg.K_RETURN:
-                board.push_san(temp_move)                    
-                temp_move = ""
+                try:
+                    board.push_san(temp_move)                    
+                    temp_move = ""
+                except:
+                    temp_move = ""
             else:
                 temp_move += event.unicode
 
