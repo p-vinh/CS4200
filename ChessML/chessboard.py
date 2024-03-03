@@ -1,13 +1,22 @@
 import chess
 import numpy as np
 import pygame as pg
+import math
+import random
+
+
+class ChessPiece:
+    def __init__(self, image, rect):
+        self.image = image
+        self.rect = rect
 
 
 board = chess.Board()
 
 pg.init()
 pg.display.set_caption("Chess")
-width, height = 400, 400
+width, height = 420, 420
+offset = 20
 screen = pg.display.set_mode((width, height))
 clock = pg.time.Clock()
 
@@ -18,17 +27,17 @@ light_square = (255, 206, 158)
 dark_square = (209, 139, 71)
 
 # Fonts
-font = pg.font.Font(None, 36)
+font = pg.font.Font(None, 24)
 
 # Images
-pieces = {
-    "P": pg.image.load("pieces/wp.png"),
+images = {
+    "P": pg.image.load("pieces/wpawn.png"),
     "N": pg.image.load("pieces/wknight.png"),
     "B": pg.image.load("pieces/wbishop.png"),
     "R": pg.image.load("pieces/wrook.png"),
     "Q": pg.image.load("pieces/wqueen.png"),
     "K": pg.image.load("pieces/wking.png"),
-    "p": pg.image.load("pieces/bp.png"),
+    "p": pg.image.load("pieces/bpawn.png"),
     "n": pg.image.load("pieces/bknight.png"),
     "b": pg.image.load("pieces/bbishop.png"),
     "r": pg.image.load("pieces/brook.png"),
@@ -36,53 +45,65 @@ pieces = {
     "k": pg.image.load("pieces/bking.png"),
 }
 
-image_size = pieces["P"].get_size()
+pieces = []
+
+for row in range(8):
+    for col in range(8):
+        piece = board.piece_at(chess.square(col, 7 - row))
+        if piece is not None:
+            rect = pg.Rect(col * 50 + offset, row * 50, 50, 50)
+            pieces.append(ChessPiece(images[piece.symbol()], rect))
 
 def drawBoard():
+    letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    numbers = ["1", "2", "3", "4", "5", "6", "7", "8"]
+
     for row in range(8):
         for col in range(8):
             if (row + col) % 2 == 0:
                 pg.draw.rect(
                     screen,
                     light_square,
-                    pg.Rect(col * 50, row * 50, 50, 50),
+                    pg.Rect(col * 50 + offset, row * 50, 50, 50),
                 )
             else:
                 pg.draw.rect(
                     screen,
                     dark_square,
-                    pg.Rect(col * 50, row * 50, 50, 50),
+                    pg.Rect(col * 50 + offset, row * 50, 50, 50),
                 )
-def drawPieces(board):
-    for row in range(8):
-        for col in range(8):
-            piece = board.piece_at(chess.square(col, 7 - row))
-            if piece is not None:
-                if piece.symbol() == "P" or piece.symbol() == "p":
-                    screen.blit(pg.transform.scale(pieces[piece.symbol()], (image_size[0] + 2, image_size[1] + 2)), (col * 50, row * 50))
-                else:
-                    screen.blit(pieces[piece.symbol()], (col * 50, row * 50))
 
+            if row == 0:
+                text = font.render(letters[col], True, (255, 255, 255))
+                screen.blit(text, (col * 50 + 25, 400))
+            if col == 0:
+                text = font.render(numbers[row], True, (255, 255, 255))
+                screen.blit(text, (col * 50 + 15, row * 50 + 30))
+
+
+def drawPieces(board):
+    for piece in pieces:
+        screen.blit(piece.image, piece.rect)
+
+
+temp_move = ""
 while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             pg.quit()
             exit()
+        elif event.type == pg.KEYDOWN:
+            print(board.legal_moves)
+            if event.key == pg.K_RETURN:
+                board.push_san(temp_move)                    
+                temp_move = ""
+            else:
+                temp_move += event.unicode
+
     drawBoard()
     drawPieces(board)
+
     pg.display.flip()
-    clock.tick(60)   
-print(board)
+    clock.tick(60)
 
 
-def checkEndCondition(board):
-    if (
-        board.is_checkmate()
-        or board.is_stalemate()
-        or board.is_insufficient_material()
-        or board.can_claim_threefold_repetition()
-        or board.can_claim_fifty_moves()
-        or board.can_claim_draw()
-    ):
-        return True
-    return False
