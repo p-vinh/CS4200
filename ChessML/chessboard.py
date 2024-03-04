@@ -1,7 +1,7 @@
 import chess
 import chess.pgn
 import pygame as pg
-
+import minmax
 
 
 WIDTH = HEIGHT = 400
@@ -61,32 +61,6 @@ def drawPieces(board):
                 screen.blit(images[piece.symbol()], (col * SQ_SIZE, row * SQ_SIZE))
 
 
-
-def getRankFile(row, col):
-    ranksToRows = {
-        0: "8",
-        1: "7",
-        2: "6",
-        3: "5",
-        4: "4",
-        5: "3",
-        6: "2",
-        7: "1",
-    }
-    filesToCols = {
-        0: "a",
-        1: "b",
-        2: "c",
-        3: "d",
-        4: "e",
-        5: "f",
-        6: "g",
-        7: "h",
-    }
-    rowsToRanks = {v: k for k, v in ranksToRows.items()}
-    colsToFiles = {v: k for k, v in filesToCols.items()}
-    return colsToFiles[col], rowsToRanks[row]
-
 def main():
     pg.display.set_caption("Chess")
 
@@ -102,29 +76,35 @@ def main():
                 pg.quit()
                 exit()
             elif event.type == pg.MOUSEBUTTONDOWN:
-                location = pg.mouse.get_pos()
-                col = location[0] // SQ_SIZE
-                row = location[1] // SQ_SIZE
-                
-                if sqSelected == (row, col):
-                    sqSelected = ()
-                    playerClicks = []
+                if board.turn == chess.WHITE:
+                    location = pg.mouse.get_pos()
+                    col = location[0] // SQ_SIZE
+                    row = location[1] // SQ_SIZE
+                    
+                    if sqSelected == (row, col):
+                        sqSelected = ()
+                        playerClicks = []
+                    else:
+                        sqSelected = (row, col)
+                        playerClicks.append(sqSelected)
+                    
+                    if len(playerClicks) == 2:
+                        move = chess.Move(
+                            chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
+                            chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
+                        )
+                        if move in board.legal_moves:
+                            print(move)
+                            board.push(move)
+                            drawBoard() # Redraw the board
+                            drawPieces(board) # Update the pieces
+                        sqSelected = ()
+                        playerClicks = []
                 else:
-                    sqSelected = (row, col)
-                    playerClicks.append(sqSelected)
-                
-                if len(playerClicks) == 2:
-                    move = chess.Move(
-                        chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
-                        chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
-                    )
-                    if move in board.legal_moves:
-                        print(move)
-                        board.push(move)
-                        drawBoard() # Redraw the board
-                        drawPieces(board) # Update the pieces
-                    sqSelected = ()
-                    playerClicks = []
+                    move = minmax.get_best_move(board, 4)
+                    board.push(move)
+                    drawBoard()
+                    drawPieces(board)
                 
         clock.tick(60)
         pg.display.flip()
