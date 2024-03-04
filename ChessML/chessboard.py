@@ -1,9 +1,6 @@
 import chess
 import chess.pgn
-import numpy as np
 import pygame as pg
-import math
-import random
 
 
 
