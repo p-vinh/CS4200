@@ -181,7 +181,16 @@ class EvaluationDataset:
 
 
 def test():
-
+    conn = pymysql.connect(
+        host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+        user="admin",
+        password="chessengine",
+        db="chessai",
+    )
+    
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 10")
+    rows = cur.fetchall()
     
     for row in rows:
         print(row)

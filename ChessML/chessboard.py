@@ -75,8 +75,8 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            elif event.type == pg.MOUSEBUTTONDOWN:
-                if board.turn == chess.WHITE:
+            if board.turn == chess.WHITE:
+                if event.type == pg.MOUSEBUTTONDOWN:
                     location = pg.mouse.get_pos()
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
@@ -93,6 +93,10 @@ def main():
                             chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
                             chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
                         )
+                        
+                        if board.piece_at(move.from_square).piece_type == chess.PAWN:
+                            if move.to_square in chess.SquareSet(chess.BB_RANK_1 | chess.BB_RANK_8):
+                                move = chess.Move(move.from_square, move.to_square, promotion=chess.QUEEN)
                         if move in board.legal_moves:
                             print(move)
                             board.push(move)
@@ -100,11 +104,21 @@ def main():
                             drawPieces(board) # Update the pieces
                         sqSelected = ()
                         playerClicks = []
-                else:
-                    move = minmax.get_best_move(board, 4)
+            else:
+                print("AI's turn")
+                print(board)
+                move = minmax.get_best_move(board, 1)
+                print(move)
+                if move is not None:
                     board.push(move)
                     drawBoard()
                     drawPieces(board)
+                elif board.is_checkmate():
+                    print("Checkmate")
+                    running = False
+                else:
+                    print("Stalemate")
+                    running = False
                 
         clock.tick(60)
         pg.display.flip()
