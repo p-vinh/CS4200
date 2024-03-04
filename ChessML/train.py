@@ -49,14 +49,15 @@ def main():
     model.create_model()
 
     data_base = data_parser.EvaluationDataset()
-    data_base.connect()
-    data_base.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # data_base.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
 
     for i in range(10):
         data = next(data_base)
-        x_train = data["binary"]
-        y_train = data["eval"]
-        model.train(x_train, y_train, epochs=10)
+        print(data)
+        if data is not None:
+            x_train = data["bin"]
+            y_train = data["eval"]
+            model.train(x_train, y_train, epochs=10)
 
     model.save(".\\ChessML\\checkpoints\\model.h5")
 

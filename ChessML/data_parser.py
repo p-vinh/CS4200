@@ -5,7 +5,9 @@ import numpy
 import chess
 import pymysql
 import sys
+import base64
 import os
+import traceback
 from dotenv import load_dotenv
 
 """
@@ -35,7 +37,7 @@ class EvaluationDataset:
         self.cursor.connection.commit()
         self.cursor.execute("USE chessai")
         self.cursor.execute(
-            "CREATE TABLE IF NOT EXISTS ChessData (id INT NOT NULL AUTO_INCREMENT, fen VARCHAR(100) NOT NULL, `binary` BLOB NOT NULL, eval FLOAT NOT NULL, PRIMARY KEY (id))"
+            "CREATE TABLE IF NOT EXISTS ChessData (id INT NOT NULL, fen VARCHAR(100) NOT NULL, bin BLOB NOT NULL, eval FLOAT NOT NULL, PRIMARY KEY (id))"
         )
         self.cursor.execute("SHOW TABLES")
         print("Current database: ", self.cursor.fetchall())
@@ -57,7 +59,8 @@ class EvaluationDataset:
             self.cursor.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
             eval = self.cursor.fetchone()
             bin = numpy.frombuffer(eval.binary, dtype=numpy.uint8)
-            bin = numpy.unpackbits(bin, axis=0).astype(numpy.single)
+            bin = numpy.unpackbits(bin).astype(numpy.single)
+            print(bin)
             eval.eval = max(eval.eval, -15)
             eval.eval = min(eval.eval, 15)
             ev = numpy.array([eval.eval]).astype(numpy.single)
@@ -78,36 +81,38 @@ class EvaluationDataset:
             print("Database connection failed due to {}".format(e))
 
     def import_game(self, pgn_file):
-        with open(pgn_file) as pgn:
-            game = chess.pgn.read_game(pgn)
+
 
         try:
             self.cursor = self.db.cursor()
             game_id = 1
-            while game is not None:
-                board = game.board()
-                for move in game.mainline_moves():
-                    board.push(move)
-                    eval = self.stock_fish_eval(board, DEPTH)
-                    binary = self.board_to_binary(board)
-                    print(binary.shape)
-                    binary = numpy.packbits(binary, axis=0).tobytes()
-
-
-                    print("Binary: ", binary)
-                    print("Eval: ", eval)
-                    print("FEN: ", board.fen())
-                    
-                    self.cursor.execute(
-                        "INSERT INTO ChessData (id, fen, binary, eval) VALUES (%s, %s, %s, %s)",
-                        (game_id, board.fen(), binary, eval),
-                    )
-                    game_id += 1
+            with open(pgn_file) as pgn:
                 game = chess.pgn.read_game(pgn)
-            self.db.commit()
+                while game is not None:
+                    board = game.board()
+                    for move in game.mainline_moves():
+                        board.push(move)
+                        eval = self.stock_fish_eval(board, DEPTH)
+                        binary = self.board_to_binary(board)
+                        
+                        print("Inserting into database: ", game_id, eval)     
+                        if eval is not None:             
+                            self.cursor.execute(
+                                "INSERT INTO ChessData (id, fen, bin, eval) VALUES (%s, %s, %s, %s)",
+                                (game_id, board.fen(), binary.tobytes(), eval),
+                            )
+                        else:
+                            print("No evaluation found for game: ", game_id)
+                            break
+                        game_id += 1
+                    self.db.commit()
+                    game = chess.pgn.read_game(pgn)
             self.cursor.close()
         except Exception as e:
-            print("Database connection failed due to {}".format(e))
+            
+            print("Error inserting into database: {}".format(e))
+            traceback.print_exc()
+            
 
     def __getitem__(self, idx):
         try:
@@ -136,35 +141,18 @@ class EvaluationDataset:
             ".\\stockfish\\stockfish-windows-x86-64-avx2.exe"
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth))
+            print(board)
+            
             score = result["score"].white().score()
-            return score
+            return score / 100.0 if score is not None else None
 
     def board_to_binary(self, board):
-        binary = numpy.zeros((14, 8, 8), dtype=numpy.uint8)
-        for idx, row in enumerate(board.board_fen().split(" ")[0].split("/")):
-            col = 0
-            for char in row:
-                if char.isdigit():
-                    col += int(char)
-                else:
-                    if char.isupper():
-                        piece = ord(char) - 65
-                    else:
-                        piece = ord(char) - 97
-                    binary[piece + 5][7 - idx][col] = 1
-                    col += 1
-        aux = board.turn
-        board.turn = chess.WHITE
-        for move in board.legal_moves:
-            i, j = self.square_to_coordinates(move.to_square)
-            binary[12][i][j] = 1
-        board.turn = chess.BLACK
-        for move in board.legal_moves:
-            i, j = self.square_to_coordinates(move.to_square)
-            binary[13][i][j] = 1
-        board.turn = aux
-        
-        print(binary)
+        binary = numpy.zeros(64, dtype=numpy.uint8)
+        for square in chess.SQUARES:
+            piece = board.piece_at(square)
+            if piece is not None:
+                index = self.square_to_index[chess.square_name(square)[0]]
+                binary[index] = piece.piece_type
         return binary
 
     def square_to_coordinates(self, square):
@@ -173,40 +161,42 @@ class EvaluationDataset:
 
     def delete(self):
         try:
-            conn = self.connect()
-            cur = conn.cursor()
-            cur.execute("DELETE FROM ChessData")
-            conn.commit()
-            cur.close()
-            conn.close()
+            self.cursor = self.db.cursor()
+            self.cursor.execute("DELETE FROM ChessData")
+            self.db.commit()
+            self.cursor.close()
+            self.db.close()
         except Exception as e:
             print("Database connection failed due to {}".format(e))
 
     def close(self):
-        self.db.close()
+        try:
+            self.db.close()
+        except pymysql.err.Error as e:
+            if str(e) != "Already closed":
+                raise
 
 
 # ==========================================================================
 
 
 def test():
-    # conn = pymysql.connect(
-    #     host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-    #     user="admin",
-    #     password="chessengine",
-    #     db="chessai",
-    # )
-    # cur = conn.cursor()
-    # cur.execute("SELECT * FROM ChessData")
-    # rows = cur.fetchall()
+    conn = pymysql.connect(
+        host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+        user="admin",
+        password="chessengine",
+        db="chessai",
+    )
     
-    # for row in rows:
-    #     print(row)
-    db = EvaluationDataset()
-    db.import_game(".\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-
-    # print(next(db))
-
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 10")
+    rows = cur.fetchall()
+    
+    for row in rows:
+        print(row)
+    # db = EvaluationDataset()
+    # db.delete()
+    # db.import_game(".\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     # db.close()
 
 
