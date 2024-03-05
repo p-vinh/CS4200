@@ -2,6 +2,7 @@ import chess
 import chess.pgn
 import pygame as pg
 import minmax
+import time
 
 
 WIDTH = HEIGHT = 400
@@ -12,7 +13,7 @@ pg.init()
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 font = pg.font.Font(None, 24)
 clock = pg.time.Clock()
-board = chess.Board("rb1qk3/p2p4/4p3/1p6/2P1P3/3P4/PP6/RBQK4 b - e3 0 1")
+board = chess.Board("7r/pp2kpbp/2r1p1p1/q2pP3/3P4/7P/PP1N1PP1/R2QK2R w KQ - 0 15")
 
 # Colors
 white = (255, 255, 255)
@@ -73,16 +74,28 @@ def ai_move(board):
             drawPieces(board)
             print("Checkmate. {} wins".format("White" if board.turn == chess.BLACK else "Black"))
             return
+        elif future_board.is_stalemate():
+            board.push(move)
+            drawBoard()
+            drawPieces(board)
+            print("Stalemate. Neither player wins")
+            return
+        elif future_board.is_insufficient_material():
+            board.push(move)
+            drawBoard()
+            drawPieces(board)
+            print("Insufficient material. Neither player wins")
+            return
 
     
-    nb_moves = len(list(current_board.legal_moves))
-
-    if nb_moves > 30:
-        current_board.push(minimax_root(board, 4))
-    elif nb_moves > 10 and nb_moves <= 30:
-        current_board.push(minimax_root(board, 5))
-    else:
-        current_board.push(minimax_root(board, 7))
+    nb_moves = len(list(board.legal_moves))
+    board.push(minmax.minimax_root(board, 1))
+    # if nb_moves > 30:
+    #     board.push(minimax_root(board, 4))
+    # elif nb_moves > 10 and nb_moves <= 30:
+    #     board.push(minimax_root(board, 5))
+    # else:
+    #     board.push(minimax_root(board, 7))
     
     drawBoard()
     drawPieces(board)
@@ -101,36 +114,6 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            outcome = board.outcome()
-            if outcome is not None:
-                result = outcome.winner()
-                if result == chess.WHITE:
-                    print("White wins")
-                elif result == chess.BLACK:
-                    print("Black wins")
-                else:
-                    print("Draw")
-                
-                termination = outcome.termination()
-                if termination == chess.Termination.CHECKMATE:
-                    print("Checkmate")
-                elif termination == chess.Termination.STALEMATE:
-                    print("Stalemate")
-                elif termination == chess.Termination.INSUFFICIENT_MATERIAL:
-                    print("Insufficient material")
-                elif termination == chess.Termination.SEVENTYFIVE_MOVES:
-                    print("Seventyfive moves")
-                elif termination == chess.Termination.FIVEFOLD_REPETITION:
-                    print("Fivefold repetition")
-                elif termination == chess.Termination.FIFTY_MOVES:
-                    print("Fifty moves")
-                elif termination == chess.Termination.THREEFOLD_REPETITION:
-                    print("Threefold repetition")
-                else:
-                    print("Unknown")
-
-                running = False
-                break
             
             if board.turn == chess.WHITE:
                 if event.type == pg.MOUSEBUTTONDOWN:
@@ -180,7 +163,7 @@ def main():
         clock.tick(60)
         pg.display.flip()
 
-
+    time.sleep(5)
 
 if __name__ == "__main__":
     main()
