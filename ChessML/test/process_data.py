@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import chess
 import chess.pgn
-
+import tensorflow as tf
+from sklearn.utils import shuffle
 
 
 def get_board_features(board):

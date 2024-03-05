@@ -5,9 +5,13 @@ import pandas as pd
 import numpy as np
 from sklearn.utils import shuffle
 
+global files_fischer
+global features
+global train
+
 
 def main():
-    path_to_csv = "C:\\Users\\vinhp\\Desktop\\ChessML\\archive\\data.csv"
+    path_to_csv = "./ChessML/Dataset/data.csv"
 
     li = []
 
@@ -44,6 +48,33 @@ def main():
         )
 
     batches_X, batches_y = split_into_batches(train)
+
+    linear_est = tf.estimator.LinearClassifier(
+        feature_columns=feature_columns,
+        model_dir="/content/gdrive/MyDrive/chess-engine/estimator",
+    )
+    input_functions = []
+
+    for df_X, df_y in zip(batches_X, batches_y):
+        input_functions.append(make_input_fn(df_X, df_y))
+        i = 1
+
+    for input_function in input_functions:
+        print(
+            "<======================================== NEW BATCH ========================================>"
+        )
+        print("Batch: " + str(i))
+        i = i + 1
+        linear_est.train(input_function)
+
+
+# save the model
+serving_input_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(
+    tf.feature_column.make_parse_example_spec(feature_columns)
+)
+
+estimator_base_path = "/content/gdrive/MyDrive/chess-engine/estimator"
+estimator_path = linear_est.export_saved_model(estimator_base_path, serving_input_fn)
 
 
 def split_into_batches(df, batch_size=100000):

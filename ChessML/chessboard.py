@@ -13,7 +13,7 @@ pg.init()
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 font = pg.font.Font(None, 24)
 clock = pg.time.Clock()
-board = chess.Board("7r/pp2kpbp/2r1p1p1/q2pP3/3P4/7P/PP1N1PP1/R2QK2R w KQ - 0 15")
+board = chess.Board()
 
 # Colors
 white = (255, 255, 255)
@@ -56,6 +56,7 @@ def drawBoard():
                 )
 
 
+
 def drawPieces(board):
     for row in range(8):
         for col in range(8):
@@ -72,7 +73,11 @@ def ai_move(board):
             board.push(move)
             drawBoard()
             drawPieces(board)
-            print("Checkmate. {} wins".format("White" if board.turn == chess.BLACK else "Black"))
+            print(
+                "Checkmate. {} wins".format(
+                    "White" if board.turn == chess.BLACK else "Black"
+                )
+            )
             return
         elif future_board.is_stalemate():
             board.push(move)
@@ -87,18 +92,17 @@ def ai_move(board):
             print("Insufficient material. Neither player wins")
             return
 
-    
     nb_moves = len(list(board.legal_moves))
-    board.push(minmax.minimax_root(board, 1))
-    # if nb_moves > 30:
-    #     board.push(minimax_root(board, 4))
-    # elif nb_moves > 10 and nb_moves <= 30:
-    #     board.push(minimax_root(board, 5))
-    # else:
-    #     board.push(minimax_root(board, 7))
-    
+    if nb_moves > 30:
+        board.push(minmax.minimax_root(board, 4))
+    elif nb_moves > 10 and nb_moves <= 30:
+        board.push(minmax.minimax_root(board, 5))
+    else:
+        board.push(minmax.minimax_root(board, 7))
+
     drawBoard()
     drawPieces(board)
+
 
 def main():
     pg.display.set_caption("Chess")
@@ -114,7 +118,7 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            
+
             if board.turn == chess.WHITE:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     location = pg.mouse.get_pos()
@@ -155,15 +159,13 @@ def main():
                         playerClicks = []
             else:
                 print("AI's turn")
-                print(board)
-
                 ai_move(board)
-
 
         clock.tick(60)
         pg.display.flip()
 
     time.sleep(5)
+
 
 if __name__ == "__main__":
     main()

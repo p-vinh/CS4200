@@ -1,11 +1,9 @@
 import chess.pgn
 import chess.engine
-import boto3
 import numpy
 import chess
 import pymysql
 import sys
-import base64
 import os
 import traceback
 from dotenv import load_dotenv
@@ -42,17 +40,6 @@ class EvaluationDataset:
         self.cursor.execute("SHOW TABLES")
         print("Current database: ", self.cursor.fetchall())
 
-        self.square_to_index = {
-            "a": 0,
-            "b": 1,
-            "c": 2,
-            "d": 3,
-            "e": 4,
-            "f": 5,
-            "g": 6,
-            "h": 7,
-        }
-
     def __next__(self):
         try:
             self.cursor = self.db.cursor()
@@ -64,7 +51,7 @@ class EvaluationDataset:
             eval.eval = max(eval.eval, -15)
             eval.eval = min(eval.eval, 15)
             ev = numpy.array([eval.eval]).astype(numpy.single)
-            self.cursor.close()
+            print(ev)
             return {"binary": bin, "eval": ev}
         except Exception as e:
             print("Database connection failed due to {}".format(e))
@@ -81,25 +68,23 @@ class EvaluationDataset:
             print("Database connection failed due to {}".format(e))
 
     def import_game(self, pgn_file):
-
-
         try:
             self.cursor = self.db.cursor()
             game_id = 1
             with open(pgn_file) as pgn:
-                game = chess.pgn.read_game(pgn)
+                game = chess.pgn.read_game(pgn)                
                 while game is not None:
                     board = game.board()
                     for move in game.mainline_moves():
                         board.push(move)
                         eval = self.stock_fish_eval(board, DEPTH)
-                        binary = self.board_to_binary(board)
-                        
-                        print("Inserting into database: ", game_id, eval)     
-                        if eval is not None:             
+                        binary = split_bitboard(board)
+
+                        print("Inserting into database: ", game_id, eval)
+                        if eval is not None:
                             self.cursor.execute(
                                 "INSERT INTO ChessData (id, fen, bin, eval) VALUES (%s, %s, %s, %s)",
-                                (game_id, board.fen(), binary.tobytes(), eval),
+                                (game_id, board.fen(), binary, eval),
                             )
                         else:
                             print("No evaluation found for game: ", game_id)
@@ -109,10 +94,8 @@ class EvaluationDataset:
                     game = chess.pgn.read_game(pgn)
             self.cursor.close()
         except Exception as e:
-            
             print("Error inserting into database: {}".format(e))
             traceback.print_exc()
-            
 
     def __getitem__(self, idx):
         try:
@@ -138,26 +121,11 @@ class EvaluationDataset:
     # Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
     def stock_fish_eval(self, board, depth):
         with chess.engine.SimpleEngine.popen_uci(
-            ".\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+            ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
         ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=depth))
+            result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
-            
-            score = result["score"].white().score()
-            return score / 100.0 if score is not None else None
-
-    def board_to_binary(self, board):
-        binary = numpy.zeros(64, dtype=numpy.uint8)
-        for square in chess.SQUARES:
-            piece = board.piece_at(square)
-            if piece is not None:
-                index = self.square_to_index[chess.square_name(square)[0]]
-                binary[index] = piece.piece_type
-        return binary
-
-    def square_to_coordinates(self, square):
-        letter = chess.square_name(square)
-        return 8 - int(letter[1]), self.square_to_index[letter[0]]
+            return result.white().score(mate_score=10000)
 
     def delete(self):
         try:
@@ -176,28 +144,99 @@ class EvaluationDataset:
             if str(e) != "Already closed":
                 raise
 
+    # ==========================================================================
 
-# ==========================================================================
+
+squares_index = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+
+def square_to_index(square):
+    letter = chess.square_name(square)
+    return 8 - int(letter[1]), squares_index[letter[0]]
+    
+def split_bitboard(board):
+    # 3D array with 14 layers, 8 rows, and 8 columns
+    # 14 Layers:
+    # 6 Layers for white pieces
+    # 6 Layers for black pieces
+    # 2 Layers add attacks and valid moves so the network knows what is being attacked
+    board3d = numpy.zeros((14, 8, 8), dtype=numpy.int8)
+    
+    for piece in chess.PIECE_TYPES:
+        for square in board.pieces(piece, chess.WHITE):
+            idx = numpy.unravel_index(square, (8, 8))
+            board3d[piece - 1][7 - idx[0]][idx[1]] = 1
+        for square in board.pieces(piece, chess.BLACK):
+            idx = numpy.unravel_index(square, (8, 8))
+            board3d[piece + 5][7 - idx[0]][idx[1]] = 1
+    
+    # Add attacks and valid moves
+    aux = board.turn
+    board.turn = chess.WHITE
+    for move in board.legal_moves:
+        i, j = square_to_index(move.to_square)
+        board3d[12][i][j] = 1
+    board.turn = chess.BLACK
+    for move in board.legal_moves:
+        i, j = square_to_index(move.to_square)
+        board3d[13][i][j] = 1
+    board.turn = aux
+    
+    return board3d
 
 
 def test():
-    conn = pymysql.connect(
-        host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-        user="admin",
-        password="chessengine",
-        db="chessai",
-    )
-    
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 10")
-    rows = cur.fetchall()
-    
-    for row in rows:
-        print(row)
+    try:
+        conn = pymysql.connect(
+            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+            user="admin",
+            password="chessengine",
+            db="chessai",
+        )
+
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM ChessData")
+        count = cur.fetchone()[0]
+        print(f"Number of rows in ChessData: {count}")
+
+        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 10")  # Fetch 10 rows
+        rows = cur.fetchall()
+
+        bins = []
+        evs = []
+        for row in rows:
+            s = row[3].decode("utf-8")
+            print(s)
+            # TODO: Convert the binary string to a 3D numpy array
+            # lst = [list(map(int, sublist.split())) for sublist in s.split('\n')]
+
+            arr = numpy.array(lst)
+            arr = arr.reshape(14, 8, 8)
+            bins.append(arr)
+            ev = numpy.asarray(row[2] / 2 + 0.5, dtype=numpy.float32)  # Normalize the evaluation
+            evs.append(ev)
+
+        bins = numpy.stack(bins)
+        evs = numpy.stack(evs)
+
+        print(bins.shape)  # Should print: (10, 14, 8, 8)
+        print(evs.shape)  # Should print: (10,)
+        # for row in rows:
+        #     print("Game ID: ", row[0])
+        #     print("FEN: ", row[1])
+        #     print("Evaluation: ", row[2])
+        #     print("Binary: ", row[3])
+        #     print("")
+            
+    except Exception as e:
+        print(f"An error occurred: {e}")
     # db = EvaluationDataset()
-    # db.delete()
-    # db.import_game(".\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # # db.delete()
+    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     # db.close()
+    # board = chess.Board("6rr/8/8/8/8/8/R7/7R w - - 0 1")
+    # print(split_bitboard(board))
+    # board.push(chess.Move.from_uci("a2g2"))
+    # print(bin(board_to_binary(board))[2::].zfill(64))
 
 
 if __name__ == "__main__":
