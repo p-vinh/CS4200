@@ -6,6 +6,7 @@ import pymysql
 import sys
 import os
 import traceback
+import binascii
 from dotenv import load_dotenv
 
 """
@@ -186,46 +187,53 @@ def split_bitboard(board):
 
 def test():
     try:
-        conn = pymysql.connect(
-            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-            user="admin",
-            password="chessengine",
-            db="chessai",
-        )
+
 
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM ChessData")
         count = cur.fetchone()[0]
         print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 10")  # Fetch 10 rows
-        rows = cur.fetchall()
+        cur.execute("SELECT * FROM ChessData WHERE fen=\"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1\"")
+        row = cur.fetchone()
+        # for row in rows:
+        s = row[3].decode("utf-8")
+        s = s.replace(" ", "")
+        s = s.replace("\n", "")
+        s = s.replace("\t", "")
+        s = s.replace("[", "")
+        s = s.replace("]", "")
 
-        bins = []
-        evs = []
-        for row in rows:
-            s = row[3].decode("utf-8")
-            print(s)
-            # TODO: Convert the binary string to a 3D numpy array
-            # lst = [list(map(int, sublist.split())) for sublist in s.split('\n')]
+        for i in range(0, len(s), 8):
+            print(s[i:i+8])
+        # # TODO: Convert the binary string to a 3D numpy array
+        binary_string = bin(int.from_bytes(s, byteorder="big"))[2::]
+        print(binary_string)
+        # numpy.array
 
-            arr = numpy.array(lst)
-            arr = arr.reshape(14, 8, 8)
-            bins.append(arr)
-            ev = numpy.asarray(row[2] / 2 + 0.5, dtype=numpy.float32)  # Normalize the evaluation
-            evs.append(ev)
+        # print(binary_string)
+        # lst = [list(map(int, sublist.split())) for sublist in s.split('\n')]
 
-        bins = numpy.stack(bins)
-        evs = numpy.stack(evs)
+        # arr = n/umpy.array(lst)
+        # arr = arr.reshape(14, 8, 8)
+        # bins.append(arr)
 
-        print(bins.shape)  # Should print: (10, 14, 8, 8)
-        print(evs.shape)  # Should print: (10,)
+
         # for row in rows:
         #     print("Game ID: ", row[0])
         #     print("FEN: ", row[1])
         #     print("Evaluation: ", row[2])
         #     print("Binary: ", row[3])
         #     print("")
+
+        # boad = chess.Board()
+        # board3d = split_bitboard(boad)
+        # print(board3d)
+
+        # unpacked_bits = numpy.unpackbits(binary)
+        # print(unpacked_bits)
+
+
             
     except Exception as e:
         print(f"An error occurred: {e}")
