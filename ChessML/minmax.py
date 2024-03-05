@@ -7,19 +7,34 @@ import chess
 
 # model = load_model.load_model(".\\checkpoints\\model.h5")
 
+"""Return array of the best chess.Move
 
-def get_all_moves(board):
-    moves = list(board.legal_moves)
-    for move in moves:
-        if board.piece_at(move.from_square).piece_type == chess.PAWN:
-            if move.to_square in chess.SquareSet(chess.BB_RANK_1 | chess.BB_RANK_8):
-                yield chess.Move(
-                    move.from_square, move.to_square, promotion=chess.QUEEN
-                )
-            else:
-                yield move
-        else:
-            yield move
+Keyword arguments:
+current_board -- chess.Board()
+model -- tf.saved_model
+proportion -- proportion of best moves returned
+"""
+
+
+def find_best_moves(current_board, model, threshold=0.5):
+    # Uses the model to predict the best moves
+    # References the data frame to get the best moves
+    pass
+
+
+def get_piece_value(piece, square):
+    x, y = square // 8, square % 8
+    
+    pass
+
+def evaluate_board(board):
+    """Return the evaluation of a board
+    """
+    evaluation = 0
+    for square in chess.SQUARES:
+    piece = str(board.piece_at(square))
+    evaluation = evaluation + get_piece_value(piece, square)
+    return evaluation
 
 
 # Eval function from the model for the current position
@@ -76,7 +91,7 @@ def minimax_root(board, depth):
         value = minimax(board, depth - 1, -numpy.inf, numpy.inf, False)
         board.pop()
 
-        if(value >= max_eval):
+        if value >= max_eval:
             max_eval = value
             max_move = move
 

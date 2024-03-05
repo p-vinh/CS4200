@@ -37,6 +37,7 @@ images = {
     "k": pg.image.load("./ChessML/pieces/bking.png"),
 }
 
+
 def drawBoard():
     for row in range(8):
         for col in range(8):
@@ -53,6 +54,7 @@ def drawBoard():
                     pg.Rect(col * SQ_SIZE, row * SQ_SIZE, SQ_SIZE, SQ_SIZE),
                 )
 
+
 def drawPieces(board):
     for row in range(8):
         for col in range(8):
@@ -60,6 +62,30 @@ def drawPieces(board):
             if piece is not None:
                 screen.blit(images[piece.symbol()], (col * SQ_SIZE, row * SQ_SIZE))
 
+
+def ai_move(board):
+    for move in board.legal_moves:
+        future_board = chess.Board(board.fen())
+        future_board.push(move)
+        if future_board.is_checkmate():
+            board.push(move)
+            drawBoard()
+            drawPieces(board)
+            print("Checkmate. {} wins".format("White" if board.turn == chess.BLACK else "Black"))
+            return
+
+    
+    nb_moves = len(list(current_board.legal_moves))
+
+    if nb_moves > 30:
+        current_board.push(minimax_root(board, 4))
+    elif nb_moves > 10 and nb_moves <= 30:
+        current_board.push(minimax_root(board, 5))
+    else:
+        current_board.push(minimax_root(board, 7))
+    
+    drawBoard()
+    drawPieces(board)
 
 def main():
     pg.display.set_caption("Chess")
@@ -69,60 +95,88 @@ def main():
     running = True
     sqSelected = ()
     playerClicks = []
-    
+
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            if board.is_checkmate():
-                print("Checkmate. {} wins".format("White" if board.turn == chess.BLACK else "Black"))
+            outcome = board.outcome()
+            if outcome is not None:
+                result = outcome.winner()
+                if result == chess.WHITE:
+                    print("White wins")
+                elif result == chess.BLACK:
+                    print("Black wins")
+                else:
+                    print("Draw")
+                
+                termination = outcome.termination()
+                if termination == chess.Termination.CHECKMATE:
+                    print("Checkmate")
+                elif termination == chess.Termination.STALEMATE:
+                    print("Stalemate")
+                elif termination == chess.Termination.INSUFFICIENT_MATERIAL:
+                    print("Insufficient material")
+                elif termination == chess.Termination.SEVENTYFIVE_MOVES:
+                    print("Seventyfive moves")
+                elif termination == chess.Termination.FIVEFOLD_REPETITION:
+                    print("Fivefold repetition")
+                elif termination == chess.Termination.FIFTY_MOVES:
+                    print("Fifty moves")
+                elif termination == chess.Termination.THREEFOLD_REPETITION:
+                    print("Threefold repetition")
+                else:
+                    print("Unknown")
+
                 running = False
+                break
+            
             if board.turn == chess.WHITE:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     location = pg.mouse.get_pos()
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
-                    
+
                     if sqSelected == (row, col):
                         sqSelected = ()
                         playerClicks = []
                     else:
                         sqSelected = (row, col)
                         playerClicks.append(sqSelected)
-                    
+
                     if len(playerClicks) == 2:
                         move = chess.Move(
                             chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
                             chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
                         )
                         if board.piece_at(move.from_square) is not None:
-                            if board.piece_at(move.from_square).piece_type == chess.PAWN:
-                                if move.to_square in chess.SquareSet(chess.BB_RANK_1 | chess.BB_RANK_8):
-                                    move = chess.Move(move.from_square, move.to_square, promotion=chess.QUEEN)
+                            if (
+                                board.piece_at(move.from_square).piece_type
+                                == chess.PAWN
+                            ):
+                                if move.to_square in chess.SquareSet(
+                                    chess.BB_RANK_1 | chess.BB_RANK_8
+                                ):
+                                    move = chess.Move(
+                                        move.from_square,
+                                        move.to_square,
+                                        promotion=chess.QUEEN,
+                                    )
                         if move in board.legal_moves:
                             print(move)
                             board.push(move)
-                        drawBoard() # Redraw the board
-                        drawPieces(board) # Update the pieces
+                        drawBoard()  # Redraw the board
+                        drawPieces(board)  # Update the pieces
                         sqSelected = ()
                         playerClicks = []
             else:
                 print("AI's turn")
                 print(board)
-                move = minmax.get_best_move(board, 1)
-                print(move)
-                if move is not None:
-                    board.push(move)
-                    drawBoard()
-                    drawPieces(board)
-                elif board.is_checkmate():
-                    print("Checkmate")
-                    running = False
-                else:
-                    print("Stalemate")
-                    running = False
-                
+
+                ai_move(board)
+
+
         clock.tick(60)
         pg.display.flip()
 
@@ -130,5 +184,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
