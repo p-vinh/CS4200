@@ -12,7 +12,7 @@ pg.init()
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 font = pg.font.Font(None, 24)
 clock = pg.time.Clock()
-board = chess.Board()
+board = chess.Board("rb1qk3/p2p4/4p3/1p6/2P1P3/3P4/PP6/RBQK4 b - e3 0 1")
 
 # Colors
 white = (255, 255, 255)
@@ -75,6 +75,9 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
+            if board.is_checkmate():
+                print("Checkmate. {} wins".format("White" if board.turn == chess.BLACK else "Black"))
+                running = False
             if board.turn == chess.WHITE:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     location = pg.mouse.get_pos()
@@ -93,15 +96,15 @@ def main():
                             chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
                             chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
                         )
-                        
-                        if board.piece_at(move.from_square).piece_type == chess.PAWN:
-                            if move.to_square in chess.SquareSet(chess.BB_RANK_1 | chess.BB_RANK_8):
-                                move = chess.Move(move.from_square, move.to_square, promotion=chess.QUEEN)
+                        if board.piece_at(move.from_square) is not None:
+                            if board.piece_at(move.from_square).piece_type == chess.PAWN:
+                                if move.to_square in chess.SquareSet(chess.BB_RANK_1 | chess.BB_RANK_8):
+                                    move = chess.Move(move.from_square, move.to_square, promotion=chess.QUEEN)
                         if move in board.legal_moves:
                             print(move)
                             board.push(move)
-                            drawBoard() # Redraw the board
-                            drawPieces(board) # Update the pieces
+                        drawBoard() # Redraw the board
+                        drawPieces(board) # Update the pieces
                         sqSelected = ()
                         playerClicks = []
             else:

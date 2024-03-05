@@ -23,56 +23,61 @@ def get_all_moves(board):
 
 
 # Eval function from the model for the current position
+# Replace with the model's eval function
 def minimax_eval(board):
     with chess.engine.SimpleEngine.popen_uci(
         ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
     ) as sf:
         result = sf.analyse(board, chess.engine.Limit(depth=3, time=0)).get("score")
 
-        if result.is_mate():
-            return numpy.inf if result.white().mate() > 0 else -numpy.inf
-        else:
-            return result.white().score(mate_score=10000)
+        return result.black().score(mate_score=10000)
 
 
 def minimax(board, depth, alpha, beta, maximizing_player):
-    if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
+    if depth == 0:
+        return -evaluate_board(board)
+    elif depth > 3:
+        legal_moves = find_best_moves(board, model, 0.75)
+    else:
+        legal_moves = list(board.legal_moves)
+
     if maximizing_player:
         max_eval = -numpy.inf
-        for move in get_all_moves(board):
+        for move in legal_moves:
             board.push(move)
             _eval = minimax(board, depth - 1, alpha, beta, False)
             board.pop()
             max_eval = max(max_eval, _eval)
             alpha = max(alpha, _eval)
             if beta <= alpha:
-                break
+                return max_eval
         return max_eval
     else:
         min_eval = numpy.inf
-        for move in get_all_moves(board):
+        for move in legal_moves:
             board.push(move)
             _eval = minimax(board, depth - 1, alpha, beta, True)
             board.pop()
             min_eval = min(min_eval, _eval)
             beta = min(beta, _eval)
             if beta <= alpha:
-                break
+                return min_eval
         return min_eval
 
 
-# Get the best move for the current position
-def get_best_move(board, depth):
-    max_move = None
+def minimax_root(board, depth):
+    # Searching for the top 50% best moves. Restricts the search space
+    legal_moves = find_best_moves(board, model)
     max_eval = -numpy.inf
+    max_move = None
 
-    for move in get_all_moves(board):
+    for move in legal_moves:
         board.push(move)
-        _eval = minimax(board, depth - 1, -numpy.inf, numpy.inf, False)
+        value = minimax(board, depth - 1, -numpy.inf, numpy.inf, False)
         board.pop()
 
-        if _eval > max_eval:
-            max_eval = _eval
+        if(value >= max_eval):
+            max_eval = value
             max_move = move
+
     return max_move
