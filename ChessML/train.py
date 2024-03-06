@@ -46,6 +46,21 @@ class EvaluationModel:
         
         return models.Model(inputs=board3d, outputs=x)
 
+    def create_model_rec(self):
+        model = models.Sequential()
+
+        model.add(layers.Conv2D(8, (3, 3), padding='same', input_shape=(14, 8, 8), activation='relu'))
+        model.add(layers.Conv2D(16, (2, 2), padding='same', activation='relu'))
+        model.add(layers.Conv2D(32, (1, 1), padding='same', activation='relu'))
+        model.add(layers.Conv2D(64, (1, 1), padding='same', activation='relu'))
+
+        model.add(layers.Flatten())
+
+        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dense(1, activation='sigmoid'))
+
+        return models.Model(inputs=board3d, outputs=x)
+
     def train(self, x_train, y_train, epochs):
         version_name = f"{int(time.time())}-batch_size-{self.batch_size}-layer_count-{self.layer_count}"
         tensorboard_callback = TensorBoard(log_dir=f"./logs/{version_name}")
@@ -84,7 +99,7 @@ def main():
             if data is not None:
                 x_train = data["binary"]
                 y_train = data["eval"]
-                model_chess.train(x_train, y_train, epochs=10)
+                model_chess.train(x_train, y_train, epochs=1000)
         except StopIteration:
             break
     data_base.close()

@@ -56,7 +56,6 @@ def drawBoard():
                 )
 
 
-
 def drawPieces(board):
     for row in range(8):
         for col in range(8):
@@ -91,14 +90,19 @@ def ai_move(board):
             drawPieces(board)
             print("Insufficient material. Neither player wins")
             return
-
-    nb_moves = len(list(board.legal_moves))
-    if nb_moves > 30:
-        board.push(minmax.minimax_root(board, 4))
-    elif nb_moves > 10 and nb_moves <= 30:
-        board.push(minmax.minimax_root(board, 5))
-    else:
-        board.push(minmax.minimax_root(board, 7))
+    # board.push(minmax.minimax_root(board, 1))
+    with chess.engine.SimpleEngine.popen_uci(
+        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+    ) as sf:
+        result = sf.analyse(board, chess.engine.Limit(depth=16, time=3  )).get("pv")
+        board.push(result[0])
+    # nb_moves = len(list(board.legal_moves))
+    # if nb_moves > 30:
+    #     board.push(minmax.minimax_root(board, 4))
+    # elif nb_moves > 10 and nb_moves <= 30:
+    #     board.push(minmax.minimax_root(board, 5))
+    # else:
+    #     board.push(minmax.minimax_root(board, 7))
 
     drawBoard()
     drawPieces(board)
@@ -120,43 +124,44 @@ def main():
                 exit()
 
             if board.turn == chess.WHITE:
-                if event.type == pg.MOUSEBUTTONDOWN:
-                    location = pg.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
+                # if event.type == pg.MOUSEBUTTONDOWN:
+                #     location = pg.mouse.get_pos()
+                #     col = location[0] // SQ_SIZE
+                #     row = location[1] // SQ_SIZE
 
-                    if sqSelected == (row, col):
-                        sqSelected = ()
-                        playerClicks = []
-                    else:
-                        sqSelected = (row, col)
-                        playerClicks.append(sqSelected)
+                #     if sqSelected == (row, col):
+                #         sqSelected = ()
+                #         playerClicks = []
+                #     else:
+                #         sqSelected = (row, col)
+                #         playerClicks.append(sqSelected)
 
-                    if len(playerClicks) == 2:
-                        move = chess.Move(
-                            chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
-                            chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
-                        )
-                        if board.piece_at(move.from_square) is not None:
-                            if (
-                                board.piece_at(move.from_square).piece_type
-                                == chess.PAWN
-                            ):
-                                if move.to_square in chess.SquareSet(
-                                    chess.BB_RANK_1 | chess.BB_RANK_8
-                                ):
-                                    move = chess.Move(
-                                        move.from_square,
-                                        move.to_square,
-                                        promotion=chess.QUEEN,
-                                    )
-                        if move in board.legal_moves:
-                            print(move)
-                            board.push(move)
-                        drawBoard()  # Redraw the board
-                        drawPieces(board)  # Update the pieces
-                        sqSelected = ()
-                        playerClicks = []
+                #     if len(playerClicks) == 2:
+                #         move = chess.Move(
+                #             chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
+                #             chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
+                #         )
+                #         if board.piece_at(move.from_square) is not None:
+                #             if (
+                #                 board.piece_at(move.from_square).piece_type
+                #                 == chess.PAWN
+                #             ):
+                #                 if move.to_square in chess.SquareSet(
+                #                     chess.BB_RANK_1 | chess.BB_RANK_8
+                #                 ):
+                #                     move = chess.Move(
+                #                         move.from_square,
+                #                         move.to_square,
+                #                         promotion=chess.QUEEN,
+                #                     )
+                #         if move in board.legal_moves:
+                #             print(move)
+                #             board.push(move)
+                #         drawBoard()  # Redraw the board
+                #         drawPieces(board)  # Update the pieces
+                #         sqSelected = ()
+                #         playerClicks = []
+                ai_move(board)
             else:
                 print("AI's turn")
                 ai_move(board)
