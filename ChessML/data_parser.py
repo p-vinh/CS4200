@@ -49,14 +49,13 @@ class EvaluationDataset:
             eval = self.cursor.fetchone()
             bit_board = numpy.frombuffer(eval[3], dtype=numpy.uint8)
             bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
-            print(bin)
-            eval[2] = max(eval[2], -15)
-            eval[2] = min(eval[2], 15)
-            ev = numpy.array([eval[2]]).astype(numpy.single)
-            print(ev)
-            return {"binary": bin, "eval": ev}
+            val = max(eval[2], -15)
+            val = min(val, 15)
+            ev = numpy.array([val]).astype(numpy.single)
+            return {"binary": bit_board, "eval": ev}
         except Exception as e:
             print("Database connection failed due to {}".format(e))
+            return {"binary": None, "eval": None}
 
     def connect(self):
         try:
@@ -195,35 +194,35 @@ def split_bitboard(board):
 
 def test():
     try:
-        conn = pymysql.connect(
-            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-            user="admin",
-            password="chessengine",
-            db="chessai",
-        )
+        # conn = pymysql.connect(
+        #     host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+        #     user="admin",
+        #     password="chessengine",
+        #     db="chessai",
+        # )
 
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM ChessData")
-        count = cur.fetchone()[0]
-        print(f"Number of rows in ChessData: {count}")
+        # cur = conn.cursor()
+        # cur.execute("SELECT COUNT(*) FROM ChessData")
+        # count = cur.fetchone()[0]
+        # print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 2")
-        rows = cur.fetchall()
+        # cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 2")
+        # rows = cur.fetchall()
 
-        # print(board)
-        # print(len(board))
-        # binary = numpy.frombuffer(bin, dtype=numpy.uint8)
-        # binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
-        # print(len(binary))
-        # print(binary_string)
+        # # print(board)
+        # # print(len(board))
+        # # binary = numpy.frombuffer(bin, dtype=numpy.uint8)
+        # # binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
+        # # print(len(binary))
+        # # print(binary_string)
 
-        for row in rows:
-            print("Game ID: ", row[0])
-            print("FEN: ", row[1])
-            print("Evaluation: ", row[2])
-            print("Binary: ", row[3])
-            print("")
-
+        # for row in rows:
+        #     print("Game ID: ", row[0])
+        #     print("FEN: ", row[1])
+        #     print("Evaluation: ", row[2])
+        #     bit_board = numpy.frombuffer(row[3], dtype=numpy.uint8)
+        #     bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
+        #     print("Binary: ", bit_board)
         # boad = chess.Board()
         # board3d = split_bitboard(boad)
         # print(board3d)
@@ -235,9 +234,14 @@ def test():
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
+    db = EvaluationDataset()
     # db.delete()
     # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    while True:
+        data = next(db)
+        if data is not None:
+            print(data["binary"])
+            print(data["eval"])
     # db.close()
     # board = chess.Board("6rr/8/8/8/8/8/R7/7R w - - 0 1")
     # print(stock_fish_eval(board, 16))
