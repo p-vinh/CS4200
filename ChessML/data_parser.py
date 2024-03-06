@@ -82,13 +82,15 @@ class EvaluationDataset:
                         eval = self.stock_fish_eval(board, DEPTH)
                         # 2. Convert the board to a 1d binary array
                         binary = split_bitboard(board)
+                        bit_board = numpy.frombuffer(binary, dtype=numpy.uint8)
+                        bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
                         board.push(move)
 
                         print("Inserting into database: ", game_id, eval)
                         if eval is not None:
                             self.cursor.execute(
                                 "INSERT INTO ChessData (id, fen, bin, eval) VALUES (%s, %s, %s, %s)",
-                                (game_id, board.fen(), binary, eval),
+                                (game_id, board.fen(), bit_board, eval),
                             )
                         else:
                             print("No evaluation found for game: ", game_id)
@@ -101,26 +103,6 @@ class EvaluationDataset:
             print("Error inserting into database: {}".format(e))
             traceback.print_exc()
 
-    def __getitem__(self, idx):
-        try:
-            conn = self.connect()
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM your_table WHERE id = %s", (idx,))
-            eval = cur.fetchone()
-            bin = numpy.frombuffer(eval.binary, dtype=numpy.uint8)
-            bin = numpy.unpackbits(bin, axis=0).astype(numpy.single)
-
-            eval.eval = max(eval.eval, -15)
-            eval.eval = min(eval.eval, 15)
-            ev = numpy.array([eval.eval]).astype(numpy.single)
-
-            cur.close()
-            conn.close()
-
-            return {"binary": bin, "eval": ev}
-
-        except Exception as e:
-            print("Database connection failed due to {}".format(e))
 
     # Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
     def stock_fish_eval(self, board, depth):
@@ -165,15 +147,15 @@ def split_bitboard(board):
     # 2 arrays add attacks and valid moves so the network knows what is being attacked
     # concatenate the turn, castling rights, and en passant square to the end of the array
     # 903 total bits
-    bitboards = numpy.array([])
+    bitboards = numpy.array([], dtype=bool)
     
     for piece in chess.PIECE_TYPES:
-        bitboard = numpy.zeros(64, dtype=numpy.uint8)
+        bitboard = numpy.zeros(64, dtype=bool)
         for square in board.pieces(piece, chess.WHITE):
             bitboard[square] = 1
         bitboards = numpy.append(bitboards, bitboard)
     for piece in chess.PIECE_TYPES:
-        bitboard = numpy.zeros(64, dtype=numpy.uint8)
+        bitboard = numpy.zeros(64, dtype=bool)
         for square in board.pieces(piece, chess.BLACK):
             bitboard[square] = 1
         bitboards = numpy.append(bitboards, bitboard)
@@ -181,41 +163,46 @@ def split_bitboard(board):
     # Add attacks and valid moves
     aux = board.turn
     board.turn = chess.WHITE
-    bitboard = numpy.zeros(64, dtype=numpy.uint8)
+    bitboard = numpy.zeros(64, dtype=bool)
     for move in board.legal_moves:
         i, j = square_to_index(move.to_square)
         bitboard[i * 8 + j] = 1
     bitboards = numpy.append(bitboards, bitboard)
     board.turn = chess.BLACK
-    bitboard = numpy.zeros(64, dtype=numpy.uint8)
+    bitboard = numpy.zeros(64, dtype=bool)
     for move in board.legal_moves:
         i, j = square_to_index(move.to_square)
         bitboard[i * 8 + j] = 1
     bitboards = numpy.append(bitboards, bitboard)
     board.turn = aux
 
-    bitboards = numpy.append(bitboards, [int(board.turn)])
+    bitboards = numpy.append(bitboards, [board.turn])
 
     bitboards = numpy.append(bitboards, [
-        int(board.has_kingside_castling_rights(chess.WHITE)),
-        int(board.has_queenside_castling_rights(chess.WHITE)),
-        int(board.has_kingside_castling_rights(chess.BLACK)),
-        int(board.has_queenside_castling_rights(chess.BLACK))
+        board.has_kingside_castling_rights(chess.WHITE),
+        board.has_queenside_castling_rights(chess.WHITE),
+        board.has_kingside_castling_rights(chess.BLACK),
+        board.has_queenside_castling_rights(chess.BLACK)
     ])
 
     # Add the check status bits
     bitboards = numpy.append(bitboards, [
-        int(board.is_check()),
-        int(board.is_checkmate())
+        board.is_check(),
+        board.is_checkmate()
     ])
-    return bitboards
+    return bitboards.tobytes()
 
 
 
 
 def test():
     try:
-
+        conn = pymysql.connect(
+            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+            user="admin",
+            password="chessengine",
+            db="chessai",
+        )
 
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM ChessData")
@@ -224,12 +211,12 @@ def test():
 
         # cur.execute("SELECT * FROM ChessData WHERE fen=\"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1\"")
         # row = cur.fetchone()
-        board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-        bin_board = split_bitboard(board).tobytes()
-        board = numpy.frombuffer(bin_board, dtype=numpy.uint8)
-        board = numpy.unpackbits(board, axis=0).astype(numpy.single)
-        print(board)
-        print(len(board))
+        # board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        # bin_board = split_bitboard(board)
+        # print(len(bin_board))
+
+        # print(board)
+        # print(len(board))
         # s = row[3].decode("utf-8")
         # s = s.replace(" ", "")
         # s = s.replace("\n", "")
@@ -269,14 +256,12 @@ def test():
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
+    db = EvaluationDataset()
     # db.delete()
-    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     # db.close()
     # board = chess.Board("6rr/8/8/8/8/8/R7/7R w - - 0 1")
     # print(split_bitboard(board))
-    # board.push(chess.Move.from_uci("a2g2"))
-    # print(bin(board_to_binary(board))[2::].zfill(64))
 
 
 if __name__ == "__main__":
