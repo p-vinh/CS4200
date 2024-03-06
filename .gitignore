@@ -2,3 +2,4 @@
 ChessML/Dataset/
 .env
 ChessML/archive/data.csv
+*.v2
