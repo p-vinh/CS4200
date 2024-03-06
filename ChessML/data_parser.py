@@ -88,7 +88,7 @@ class EvaluationDataset:
                         if eval is not None:
                             self.cursor.execute(
                                 "INSERT INTO ChessData (id, fen, bin, eval) VALUES (%s, %s, %s, %s)",
-                                (game_id, board.fen(), bit_board, eval),
+                                (game_id, board.fen(), binary, eval),
                             )
                         else:
                             print("No evaluation found for game: ", game_id)
