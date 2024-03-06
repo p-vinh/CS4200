@@ -47,12 +47,12 @@ class EvaluationDataset:
             self.cursor = self.db.cursor()
             self.cursor.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
             eval = self.cursor.fetchone()
-            bin = numpy.frombuffer(eval.binary, dtype=numpy.uint8)
-            bin = numpy.unpackbits(bin, axis=0).astype(numpy.single)
+            bit_board = numpy.frombuffer(eval[3], dtype=numpy.uint8)
+            bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
             print(bin)
-            eval.eval = max(eval.eval, -15)
-            eval.eval = min(eval.eval, 15)
-            ev = numpy.array([eval.eval]).astype(numpy.single)
+            eval[2] = max(eval[2], -15)
+            eval[2] = min(eval[2], 15)
+            ev = numpy.array([eval[2]]).astype(numpy.single)
             print(ev)
             return {"binary": bin, "eval": ev}
         except Exception as e:
@@ -82,8 +82,6 @@ class EvaluationDataset:
                         eval = self.stock_fish_eval(board, DEPTH)
                         # 2. Convert the board to a 1d binary array
                         binary = split_bitboard(board)
-                        bit_board = numpy.frombuffer(binary, dtype=numpy.uint8)
-                        bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
                         board.push(move)
 
                         print("Inserting into database: ", game_id, eval)
@@ -111,7 +109,7 @@ class EvaluationDataset:
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
-            return result.white().score(mate_score=10000)
+            return result.white().score(mate_score=10000) / 100
 
     def delete(self):
         try:
@@ -209,41 +207,22 @@ def test():
         count = cur.fetchone()[0]
         print(f"Number of rows in ChessData: {count}")
 
-        # cur.execute("SELECT * FROM ChessData WHERE fen=\"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1\"")
-        # row = cur.fetchone()
-        # board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-        # bin_board = split_bitboard(board)
-        # print(len(bin_board))
+        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 2")
+        rows = cur.fetchall()
 
         # print(board)
         # print(len(board))
-        # s = row[3].decode("utf-8")
-        # s = s.replace(" ", "")
-        # s = s.replace("\n", "")
-        # s = s.replace("[", "")
-        # s = s.replace("]", "")
-        # bin = bytes(s, "utf-8")
-        # print(bin)
         # binary = numpy.frombuffer(bin, dtype=numpy.uint8)
         # binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
         # print(len(binary))
         # print(binary_string)
-        # numpy.array
 
-        # print(binary_string)
-        # lst = [list(map(int, sublist.split())) for sublist in s.split('\n')]
-
-        # arr = n/umpy.array(lst)
-        # arr = arr.reshape(14, 8, 8)
-        # bins.append(arr)
-
-
-        # for row in rows:
-        #     print("Game ID: ", row[0])
-        #     print("FEN: ", row[1])
-        #     print("Evaluation: ", row[2])
-        #     print("Binary: ", row[3])
-        #     print("")
+        for row in rows:
+            print("Game ID: ", row[0])
+            print("FEN: ", row[1])
+            print("Evaluation: ", row[2])
+            print("Binary: ", row[3])
+            print("")
 
         # boad = chess.Board()
         # board3d = split_bitboard(boad)
@@ -256,11 +235,12 @@ def test():
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    db = EvaluationDataset()
+    # db = EvaluationDataset()
     # db.delete()
-    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     # db.close()
     # board = chess.Board("6rr/8/8/8/8/8/R7/7R w - - 0 1")
+    # print(stock_fish_eval(board, 16))
     # print(split_bitboard(board))
 
 
