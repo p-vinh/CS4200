@@ -1,31 +1,41 @@
 import numpy as np
 import chess
 from collections import OrderedDict
-from operator import itemgetter 
+from operator import itemgetter
+
 # import tensorflow as tf
 import data_parser
 from model import EvaluationModel
 import torch
 
 
+model_chess = EvaluationModel.load_from_checkpoint(
+    "./checkpoints/V2-batch_size-10-layer_count-4.ckpt"
+)
 
-model_chess = EvaluationModel.load_from_checkpoint("./checkpoints/V2-batch_size-10-layer_count-4.ckpt")
+
 # Eval function from the model for the current position
 def minimax_eval(board):
+    # with chess.engine.SimpleEngine.popen_uci(
+    #     ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+    # ) as sf:
+    #     result = sf.analyse(board, chess.engine.Limit(depth=1)).get("score")
+    #     print("STOCKFISH EVAL: ", result.white().score(mate_score=10000) / 100)
     board = data_parser.split_bitboard(board)
-    board_tensor = torch.from_numpy(board)
-    
-    board_tensor = board_tensor.unsqueeze(0)
-    
+    binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
+    binary = binary.reshape(14, 8, 8)
+    board_tensor = torch.from_numpy(binary)
+
+
+        
     with torch.no_grad():
-        return model_chess(board_tensor).item()
-    
+        output = model_chess(board_tensor)
+        return output
 
 
 def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
         return minimax_eval(board)
-
 
     if maximizing_player:
         max_eval = -np.inf
@@ -66,7 +76,3 @@ def minimax_root(board, depth):
             max_move = move
 
     return max_move
-
-if __name__ == "__main__":
-    board = chess.Board()
-    print(minimax_eval(board))
