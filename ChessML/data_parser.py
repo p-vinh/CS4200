@@ -48,8 +48,15 @@ class EvaluationDataset:
         try:
             self.cursor = self.db.cursor()
             self.cursor.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
-            eval = self.cursor.fetchone()
-            return eval
+            result = self.cursor.fetchone()
+            bytes_array = BytesIO(result[3])
+            binary = numpy.frombuffer(bytes_array.getvalue(), dtype=numpy.uint8)
+            binary = binary.reshape(14, 8, 8)
+            val = min(result[2], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
+            val = max(val, -15) # Checkmate score is -10000 so we bound it to -15, otherwise it's too low for the network
+            
+            binary = torch.from_numpy(binary).to(torch.float16)
+            return binary, val
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -63,8 +70,7 @@ class EvaluationDataset:
             array2 = []
 
             for row in rows:
-                binary = numpy.frombuffer(row[0], dtype=numpy.uint8)
-                binary = numpy.unpackbits(binary).astype(numpy.single)
+                binary = numpy.frombuffer(BytesIO(eval[0]).getvalue(), dtype=numpy.uint8).reshape(14, 8, 8)
                 array1.append(binary)
                 array2.append(row[1])
             array1 = numpy.array(array1)
@@ -78,13 +84,16 @@ class EvaluationDataset:
     def __getitem__(self, idx):
         try:
             self.cursor = self.db.cursor()
-            self.cursor.execute("SELECT bin, eval FROM ChessData WHERE id = %s", (idx + 1,))
-            eval = self.cursor.fetchone()
+            self.cursor.execute("SELECT * FROM ChessData WHERE id = %s", (idx + 1,))
+            result = self.cursor.fetchone()
             # convert binary to numpy array
-            binary = numpy.frombuffer(BytesIO(eval[0]).getvalue(), dtype=numpy.uint8).reshape(14, 8, 8)
-            print(binary.shape)
-            val = min(eval[1], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
+            bytes_array = BytesIO(result[3])
+            binary = numpy.frombuffer(bytes_array.getvalue(), dtype=numpy.uint8)
+            binary = binary.reshape(14, 8, 8)
+            val = min(result[2], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
             val = max(val, -15) # Checkmate score is -10000 so we bound it to -15, otherwise it's too low for the network
+            
+            binary = torch.from_numpy(binary).to(torch.float16)
             return binary, val
         except Exception as e:
             print("Database connection failed due to {}".format(e))
