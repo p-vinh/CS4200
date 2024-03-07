@@ -4,11 +4,9 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-import time
 from collections import OrderedDict
 import data_parser
 import numpy as np
-from torch.utils.data import IterableDataset
 import chess
 
 global model
@@ -32,11 +30,12 @@ class EvaluationModel(pl.LightningModule):
         self.seq = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
+        x = x.view(-1, 896)
         return self.seq(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x).squeeze()
+        y_hat = self(x).squeeze(1)
         loss = F.l1_loss(y_hat, y)
         self.log("train_loss", loss)
         return loss
@@ -48,79 +47,7 @@ class EvaluationModel(pl.LightningModule):
         dataset = data_parser.EvaluationDataset()
         return DataLoader(dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True)
         
-def collate_fn(data):
-    bin = [torch.from_numpy(item['binary']) for item in data]
-    eval = [torch.from_numpy(item['eval']) for item in data]
 
-    max_len = max([tensor.shape[0] for tensor in bin])
-    bin = [F.pad(tensor, (0, max_len - tensor.shape[0])) for tensor in bin]
-    
-    binary = torch.stack(bin)
-    eval = torch.stack(eval)
-    print(binary.shape, eval.shape)
-    return binary, eval
-
-
-
-# Eval function from the model for the current position
-def minimax_eval(board):
-    board = data_parser.split_bitboard(board)
-    board_tensor = torch.from_numpy(board)
-    
-    board_tensor = board_tensor.unsqueeze(0)
-    
-    with torch.no_grad():
-        return model(board_tensor).item()
-    
-
-
-def minimax(board, depth, alpha, beta, maximizing_player):
-    if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
-
-
-    if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
-
-    if maximizing_player:
-        max_eval = -np.inf
-        for move in board.legal_moves:
-            board.push(move)
-            _eval = minimax(board, depth - 1, alpha, beta, False)
-            board.pop()
-            max_eval = max(max_eval, _eval)
-            alpha = max(alpha, _eval)
-            if beta <= alpha:
-                return max_eval
-        return max_eval
-    else:
-        min_eval = np.inf
-        for move in board.legal_moves:
-            board.push(move)
-            _eval = minimax(board, depth - 1, alpha, beta, True)
-            board.pop()
-            min_eval = min(min_eval, _eval)
-            beta = min(beta, _eval)
-            if beta <= alpha:
-                return min_eval
-        return min_eval
-
-
-def minimax_root(board, depth):
-    # Searching for the top 50% best moves. Restricts the search space
-    max_eval = -np.inf
-    max_move = None
-
-    for move in board.legal_moves:
-        board.push(move)
-        value = minimax(board, depth - 1, -np.inf, np.inf, False)
-        board.pop()
-
-        if value >= max_eval:
-            max_eval = value
-            max_move = move
-
-    return max_move
 
 if __name__ == "__main__":
     configs = [
@@ -128,11 +55,11 @@ if __name__ == "__main__":
     #  {"layer_count": 6, "batch_size": 1024},
     ]
     for config in configs:
-        version_name = f'{int(time.time())}-batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+        version_name = f'V2-batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10)
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10000)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
