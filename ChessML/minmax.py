@@ -9,7 +9,7 @@ import torch
 
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint("./checkpoints/V2-batch_size-10-layer_count-4.ckpt")
 # Eval function from the model for the current position
 def minimax_eval(board):
     board = data_parser.split_bitboard(board)
