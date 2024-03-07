@@ -81,10 +81,8 @@ class EvaluationDataset:
             eval = self.cursor.fetchone()
             binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
             binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
-            val = max(eval[2], -15)
-            val = min(val, 15)
-            ev = numpy.array(val / 2 + 0.5, dtype=numpy.single)
-            return {"binary": binary, "eval": ev}
+            val = min(val, 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
+            return {"binary": binary, "eval": val}
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
