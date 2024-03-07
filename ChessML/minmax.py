@@ -4,23 +4,22 @@ from collections import OrderedDict
 from operator import itemgetter 
 # import tensorflow as tf
 import data_parser
+from model import EvaluationModel
+import torch
 
 
 
-# model_chess = tf.keras.models.load_model("./ChessML/latest-model")
-
+model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
 # Eval function from the model for the current position
-# Replace with the model's eval function
 def minimax_eval(board):
-    # board3d = data_parser.split_bitboard(board)
-    # board3d = np.expand_dims(board3d, 0)
-    # return model_chess.predict(board3d)[0][0]
-    with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-    ) as sf:
-        result = sf.analyse(board, chess.engine.Limit(depth=3, time=0)).get("score")
-
-        return result.black().score(mate_score=10000)
+    board = data_parser.split_bitboard(board)
+    board_tensor = torch.from_numpy(board)
+    
+    board_tensor = board_tensor.unsqueeze(0)
+    
+    with torch.no_grad():
+        return model_chess(board_tensor).item()
+    
 
 
 def minimax(board, depth, alpha, beta, maximizing_player):
@@ -70,3 +69,7 @@ def minimax_root(board, depth):
             max_move = move
 
     return max_move
+
+if __name__ == "__main__":
+    board = chess.Board()
+    print(minimax_eval(board))

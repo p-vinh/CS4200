@@ -7,7 +7,7 @@ import sys
 import os
 import base64
 import traceback
-import binascii
+import torch
 from dotenv import load_dotenv
 
 """
@@ -41,18 +41,14 @@ class EvaluationDataset:
         )
         self.cursor.execute("SHOW TABLES")
         print("Current database: ", self.cursor.fetchall())
+        self.query = "SELECT * FROM ChessData"
 
     def __next__(self):
         try:
             self.cursor = self.db.cursor()
             self.cursor.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
             eval = self.cursor.fetchone()
-            binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
-            binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
-            val = max(eval[2], -15)
-            val = min(val, 15)
-            ev = numpy.array(val / 2 + 0.5, dtype=numpy.single)
-            return {"binary": binary, "eval": ev}
+            return eval
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -77,6 +73,31 @@ class EvaluationDataset:
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
+    
+    def __getitem__(self, idx):
+        try:
+            self.cursor = self.db.cursor()
+            self.cursor.execute("SELECT * FROM ChessData WHERE id = %s", (idx + 1,))
+            eval = self.cursor.fetchone()
+            binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
+            binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
+            val = max(eval[2], -15)
+            val = min(val, 15)
+            ev = numpy.array(val / 2 + 0.5, dtype=numpy.single)
+            return {"binary": binary, "eval": ev}
+        except Exception as e:
+            print("Database connection failed due to {}".format(e))
+            raise
+        
+    def __len__(self):
+        try:
+            self.cursor.execute("SELECT COUNT(*) FROM ChessData")
+            count = self.cursor.fetchone()[0]
+            return count
+        except Exception as e:
+            print("Database connection failed due to {}".format(e))
+            raise
+        
     def connect(self):
         try:
             conn = pymysql.connect(
@@ -87,7 +108,15 @@ class EvaluationDataset:
             return conn
         except Exception as e:
             print("Database connection failed due to {}".format(e))
-
+            
+    def __iter__(self):
+        conn = self.connect()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(self.query)
+        for row in cursor:
+            yield row
+  
+        
     def import_game(self, pgn_file):
         try:
             self.cursor = self.db.cursor()
@@ -127,7 +156,8 @@ class EvaluationDataset:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
             return result.white().score(mate_score=10000) / 100
-
+        
+        
     def delete(self):
         try:
             self.cursor = self.db.cursor()
@@ -231,51 +261,33 @@ def test():
         # cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 2")
         # rows = cur.fetchall()
 
-        # # print(board)
-        # # print(len(board))
-        # # binary = numpy.frombuffer(bin, dtype=numpy.uint8)
-        # # binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
-        # # print(len(binary))
-        # # print(binary_string)
-
-        # for row in rows:
-        #     print("Game ID: ", row[0])
-        #     print("FEN: ", row[1])
-        #     print("Evaluation: ", row[2])
-        #     bit_board = numpy.frombuffer(row[3], dtype=numpy.uint8)
-        #     bit_board = numpy.unpackbits(bit_board, axis=0).astype(numpy.single)
-        #     print("Binary: ", bit_board)
-        # boad = chess.Board()
-        # board3d = split_bitboard(boad)
-        # print(board3d)
-
-        # unpacked_bits = numpy.unpackbits(binary)
-        # print(unpacked_bits)
 
         pass
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    db = EvaluationDataset()
+    # db = EvaluationDataset()
     # db.delete()
-    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    data = next(db)
-    
-    for i in data:
-        print(len(data["binary"]))
+    #db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    #data = db.__getitem__(0)
+    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
+    #print(tensor.size())
+    #data = db.__getitem__(123)
+    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
+    #print(tensor.size())
     # if data is not None:
     #     print(data["binary"])
     #     print(type(data["binary"]))
     #     print(data["eval"])
     #     print(type(data["eval"]))
     # db.close()
-    # board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-    # binary = split_bitboard(board)
-    # print(binary)
+    board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    binary = split_bitboard(board)
+    print(binary.shape)
     # binp = numpy.frombuffer(binary, dtype=numpy.uint8)
     # b = numpy.unpackbits(binp).astype(numpy.single)
     # print(b)
-    
+
 
     # for i in range(14):
         # print(b[i * 64: (i + 1) * 64])
