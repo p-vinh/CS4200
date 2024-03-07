@@ -10,7 +10,7 @@ import base64
 import traceback
 import torch
 from dotenv import load_dotenv
-
+from torch.utils.data import IterableDataset
 """
 EvaluationDataset takes single random row from the SQLite table and preprocesses it by extracting the
 binary value in raw bytes, converting those bytes to floats using numpy’s frombuffer and unpackbits functions,
@@ -20,9 +20,10 @@ DEPTH = 16
 
 
 # ======================AWS RDS MySQL Connection===============================
-class EvaluationDataset:
+class EvaluationDataset(IterableDataset):
 
     def __init__(self):
+        super(EvaluationDataset, self).__init__()
         load_dotenv()
         self.endpoint = os.environ.get("DB_ENDPOINT")
         self.port = os.environ.get("DB_PORT")
@@ -285,23 +286,11 @@ def test():
     
     # print(data["binary"].shape)
     # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    data = db.__getitem__(0)
-    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
-    print(type(data[0]), data[0])
-    print(data[0].shape)
-    #data = db.__getitem__(123)
-    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
-    #print(tensor.size())
-    # if data is not None:
-    #     print(data["binary"])
-    #     print(type(data["binary"]))
-    #     print(data["eval"])
-    #     print(type(data["eval"]))
-    # db.close()
+    # data = db.__getitem__(0)
+    # print(type(data[0]), data[0])
+    # print(data[0].shape)
 
 
-    # for i in range(14):
-        # print(b[i * 64: (i + 1) * 64])
 
 
 if __name__ == "__main__":
