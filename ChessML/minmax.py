@@ -8,19 +8,19 @@ from model import EvaluationModel
 import torch
 
 
-model = EvaluationModel()
-model.load_state_dict(torch.load("./checkpoints/1709802766-batch_size-10-layer_count-4.ckpt"))
-model.eval()
+
+model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
 # Eval function from the model for the current position
 def minimax_eval(board):
     board = data_parser.split_bitboard(board)
-    binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
-    binary = binary.reshape(14, 8, 8)
-    board_tensor = torch.from_numpy(binary)
+    board_tensor = torch.from_numpy(board)
     
+    board_tensor = board_tensor.unsqueeze(0)
     
     with torch.no_grad():
-        return model(board_tensor)
+        return model_chess(board_tensor).item()
+    
+
 
 def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
