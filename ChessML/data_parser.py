@@ -1,3 +1,4 @@
+from io import BytesIO
 import chess.pgn
 import chess.engine
 import numpy
@@ -77,18 +78,13 @@ class EvaluationDataset:
     def __getitem__(self, idx):
         try:
             self.cursor = self.db.cursor()
-            self.cursor.execute("SELECT * FROM ChessData WHERE id = %s", (idx + 1,))
+            self.cursor.execute("SELECT bin, eval FROM ChessData WHERE id = %s", (idx + 1,))
             eval = self.cursor.fetchone()
-            print(type(eval[3]))
-            binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
-            binary = numpy.unpackbits(binary)
-
-            val = min(eval[2], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
-            val = max(val, -15)
-            
-            # binary = torch.from_numpy(binary).type(torch.uint8)
-            val = torch.tensor(val).type(torch.float32)
-            
+            # convert binary to numpy array
+            binary = numpy.frombuffer(BytesIO(eval[0]).getvalue(), dtype=numpy.uint8).reshape(14, 8, 8)
+            print(binary.shape)
+            val = min(eval[1], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
+            val = max(val, -15) # Checkmate score is -10000 so we bound it to -15, otherwise it's too low for the network
             return binary, val
         except Exception as e:
             print("Database connection failed due to {}".format(e))
@@ -131,11 +127,12 @@ class EvaluationDataset:
                 while game is not None:
                     board = game.board()
                     for move in game.mainline_moves():
+                        board.push(move)
                         eval = self.stock_fish_eval(board, DEPTH)
                         binary = split_bitboard(board)
-                        board.push(move)
 
-                        print("Inserting into database: ", game_id, eval)
+                        print("Inserting into database: ", game_id, len(binary), eval)
+                        print(board.fen())
                         if eval is not None:
                             self.cursor.execute(
                                 "INSERT INTO ChessData (id, fen, bin, eval) VALUES (%s, %s, %s, %s)",
@@ -243,8 +240,7 @@ def split_bitboard(board):
     # ])
     bitboards = bitboards.reshape(14, 8, 8)
     binary = numpy.frombuffer(bitboards, dtype=numpy.uint8)
-    binp = numpy.packbits(binary, 0)
-    return binp
+    return binary.tobytes()
 
 
 
@@ -273,6 +269,12 @@ def test():
         print(f"An error occurred: {e}")
     db = EvaluationDataset()
     # db.delete()
+    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # data = db.__getitem__(0)
+    # print(data[0].shape)
+    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
+    
+    # print(data["binary"].shape)
     # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     data = db.__getitem__(0)
     #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
@@ -287,12 +289,7 @@ def test():
     #     print(data["eval"])
     #     print(type(data["eval"]))
     # db.close()
-    # board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-    # binary = split_bitboard(board)
-    # print(binary.shape)
-    # binp = numpy.frombuffer(binary, dtype=numpy.uint8)
-    # b = numpy.unpackbits(binp)
-    # print(b.shape)
+
 
     # for i in range(14):
         # print(b[i * 64: (i + 1) * 64])
