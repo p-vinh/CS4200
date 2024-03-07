@@ -80,7 +80,7 @@ class EvaluationDataset:
             self.cursor.execute("SELECT * FROM ChessData WHERE id = %s", (idx + 1,))
             eval = self.cursor.fetchone()
             binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
-            binary = numpy.unpackbits(binary, axis=0).astype(numpy.single)
+            binary = numpy.unpackbits(binary, axis=0)
             val = min(val, 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
             return {"binary": binary, "eval": val}
         except Exception as e:
@@ -264,9 +264,9 @@ def test():
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
+    db = EvaluationDataset()
     # db.delete()
-    #db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
     #data = db.__getitem__(0)
     #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
     #print(tensor.size())
@@ -279,12 +279,12 @@ def test():
     #     print(data["eval"])
     #     print(type(data["eval"]))
     # db.close()
-    board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-    binary = split_bitboard(board)
-    print(binary.shape)
+    # board = chess.Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    # binary = split_bitboard(board)
+    # print(binary.shape)
     # binp = numpy.frombuffer(binary, dtype=numpy.uint8)
-    # b = numpy.unpackbits(binp).astype(numpy.single)
-    # print(b)
+    # b = numpy.unpackbits(binp)
+    # print(b.shape)
 
 
     # for i in range(14):
