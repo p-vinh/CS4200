@@ -10,7 +10,6 @@ import base64
 import traceback
 import torch
 from dotenv import load_dotenv
-from torch.utils.data import IterableDataset
 """
 EvaluationDataset takes single random row from the SQLite table and preprocesses it by extracting the
 binary value in raw bytes, converting those bytes to floats using numpy’s frombuffer and unpackbits functions,
@@ -20,10 +19,9 @@ DEPTH = 16
 
 
 # ======================AWS RDS MySQL Connection===============================
-class EvaluationDataset(IterableDataset):
+class EvaluationDataset():
 
     def __init__(self):
-        super(EvaluationDataset, self).__init__()
         load_dotenv()
         self.endpoint = os.environ.get("DB_ENDPOINT")
         self.port = os.environ.get("DB_PORT")
@@ -48,7 +46,7 @@ class EvaluationDataset(IterableDataset):
     def __next__(self):
         try:
             self.cursor = self.db.cursor()
-            self.cursor.execute("SELECT bin, eval FROM ChessData WHERE id = %s", (idx + 1,))
+            self.cursor.execute("SELECT bin, eval FROM ChessData ORDER BY RAND() LIMIT 1")
             result = self.cursor.fetchone()
             # convert binary to numpy array
             binary = BytesIO(result[0])
@@ -61,27 +59,6 @@ class EvaluationDataset(IterableDataset):
             binary = torch.from_numpy(binary).to(torch.float16)
                         
             return binary, val
-        except Exception as e:
-            print("Database connection failed due to {}".format(e))
-            raise
-    
-    def get_batch(self, batch_size):
-        try:
-            self.cursor.execute("SELECT bin, eval FROM ChessData LIMIT %s", (batch_size,))
-            rows = self.cursor.fetchall()
-
-            array1 = []
-            array2 = []
-
-            for row in rows:
-                binary = numpy.frombuffer(row[0], dtype=numpy.uint8)
-                binary = numpy.unpackbits(binary).astype(numpy.single)
-                array1.append(binary)
-                array2.append(row[1])
-            array1 = numpy.array(array1)
-            array2 = numpy.array(array2)
-            
-            return array1, array2
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -128,7 +105,7 @@ class EvaluationDataset(IterableDataset):
             
     def __iter__(self):
         conn = self.connect()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
         cursor.execute(self.query)
         for row in cursor:
             yield row
@@ -286,15 +263,7 @@ def test():
     db = EvaluationDataset()
     # db.delete()
     db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    # data = db.__getitem__(0)
-    # print(data[0].shape)
-    #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
-    
-    # print(data["binary"].shape)
-    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    # data = db.__getitem__(0)
-    # print(type(data[0]), data[0])
-    # print(data[0].shape)
+
 
 
 

@@ -27,9 +27,6 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return minimax_eval(board)
 
 
-    if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
-
     if maximizing_player:
         max_eval = -np.inf
         for move in board.legal_moves:

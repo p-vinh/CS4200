@@ -90,19 +90,14 @@ def ai_move(board):
             drawPieces(board)
             print("Insufficient material. Neither player wins")
             return
-    # board.push(minmax.minimax_root(board, 1))
-    with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-    ) as sf:
-        result = sf.analyse(board, chess.engine.Limit(depth=16, time=3  )).get("pv")
-        board.push(result[0])
-    # nb_moves = len(list(board.legal_moves))
-    # if nb_moves > 30:
-    #     board.push(minmax.minimax_root(board, 4))
-    # elif nb_moves > 10 and nb_moves <= 30:
-    #     board.push(minmax.minimax_root(board, 5))
-    # else:
-    #     board.push(minmax.minimax_root(board, 7))
+        
+    nb_moves = len(list(board.legal_moves))
+    if nb_moves > 30:
+        board.push(minmax.minimax_root(board, 4))
+    elif nb_moves > 10 and nb_moves <= 30:
+        board.push(minmax.minimax_root(board, 5))
+    else:
+        board.push(minmax.minimax_root(board, 7))
 
     drawBoard()
     drawPieces(board)
