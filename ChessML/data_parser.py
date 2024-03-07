@@ -79,10 +79,17 @@ class EvaluationDataset:
             self.cursor = self.db.cursor()
             self.cursor.execute("SELECT * FROM ChessData WHERE id = %s", (idx + 1,))
             eval = self.cursor.fetchone()
+            print(type(eval[3]))
             binary = numpy.frombuffer(eval[3], dtype=numpy.uint8)
-            binary = numpy.unpackbits(binary, axis=0)
-            val = min(val, 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
-            return {"binary": binary, "eval": val}
+            binary = numpy.unpackbits(binary)
+
+            val = min(eval[2], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
+            val = max(val, -15)
+            
+            # binary = torch.from_numpy(binary).type(torch.uint8)
+            val = torch.tensor(val).type(torch.float32)
+            
+            return binary, val
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -266,10 +273,11 @@ def test():
         print(f"An error occurred: {e}")
     db = EvaluationDataset()
     # db.delete()
-    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    #data = db.__getitem__(0)
+    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    data = db.__getitem__(0)
     #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
-    #print(tensor.size())
+    print(type(data[0]), data[0])
+    print(data[0].shape)
     #data = db.__getitem__(123)
     #tensor = torch.from_numpy(numpy.frombuffer(data["eval"], dtype=numpy.uint8))
     #print(tensor.size())
@@ -285,7 +293,6 @@ def test():
     # binp = numpy.frombuffer(binary, dtype=numpy.uint8)
     # b = numpy.unpackbits(binp)
     # print(b.shape)
-
 
     # for i in range(14):
         # print(b[i * 64: (i + 1) * 64])

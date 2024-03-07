@@ -12,16 +12,23 @@ from torch.utils.data import IterableDataset
 import chess
 
 global model
+ 
 class EvaluationModel(pl.LightningModule):
-    def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=10):
+    def __init__(self, learning_rate=1e-3, batch_size=1024):
         super(EvaluationModel, self).__init__()
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         layers = []
-        for i in range(layer_count - 1):
-            layers.append((f"linear-{i}", nn.Linear(3640, 3640)))
-            layers.append((f"relu-{i}", nn.ReLU()))
-        layers.append((f"linear-{layer_count-1}", nn.Linear(3640, 1)))
+        
+        layers.append((f"linear-{0}", nn.Linear(896, 896)))
+        layers.append((f"relu-{0}", nn.ReLU()))
+        layers.append((f"linear-{1}", nn.Linear(896, 448)))
+        layers.append((f"relu-{1}", nn.ReLU()))
+        layers.append((f"linear-{2}", nn.Linear(448, 224)))
+        layers.append((f"relu-{2}", nn.ReLU()))
+        layers.append((f"linear-{3}", nn.Linear(224, 112)))
+        layers.append((f"relu-{3}", nn.ReLU()))
+        layers.append((f"linear-{4}", nn.Linear(112, 1)))
         self.seq = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
@@ -39,9 +46,7 @@ class EvaluationModel(pl.LightningModule):
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
-        return DataLoader(
-            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True, collate_fn=collate_fn
-        )
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True)
         
 def collate_fn(data):
     bin = [torch.from_numpy(item['binary']) for item in data]
@@ -119,7 +124,7 @@ def minimax_root(board, depth):
 
 if __name__ == "__main__":
     configs = [
-    {"layer_count": 4, "batch_size": 512},
+    {"layer_count": 4, "batch_size": 10},
     #  {"layer_count": 6, "batch_size": 1024},
     ]
     for config in configs:
@@ -129,7 +134,6 @@ if __name__ == "__main__":
         )
         trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10)
         model = EvaluationModel(
-            layer_count=config["layer_count"],
             batch_size=config["batch_size"],
             learning_rate=1e-3,
         )
@@ -141,8 +145,8 @@ if __name__ == "__main__":
         
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
         
-    #     break
-    model = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
-    board = chess.Board()
-    print(minimax_eval(board))
+        break
+    # model = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
+    # board = chess.Board()
+    # print(minimax_eval(board))
 
