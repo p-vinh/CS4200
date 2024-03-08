@@ -90,15 +90,19 @@ def ai_move(board):
             drawPieces(board)
             print("Insufficient material. Neither player wins")
             return
-        
-    nb_moves = len(list(board.legal_moves))
-    if nb_moves > 30:
-        board.push(minmax.minimax_root(board, 4))
-    elif nb_moves > 10 and nb_moves <= 30:
-        board.push(minmax.minimax_root(board, 5))
-    else:
-        board.push(minmax.minimax_root(board, 7))
 
+    nb_moves = len(list(board.legal_moves))
+    move = None
+    if nb_moves > 30:
+        move = minmax.minimax_root(board, 4)
+    elif nb_moves > 10 and nb_moves <= 30:
+        move = minmax.minimax_root(board, 5)
+    else:
+        move = minmax.minimax_root(board, 7)
+        
+    board.push(move)
+    print(move)
+    
     drawBoard()
     drawPieces(board)
 

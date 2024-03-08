@@ -45,7 +45,7 @@ class EvaluationModel(pl.LightningModule):
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
-        return DataLoader(dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=2, pin_memory=True)
         
 
 
