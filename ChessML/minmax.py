@@ -7,17 +7,15 @@ import torch
 from time import sleep
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\epoch=62-step=400617.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\epoch=210-step=26375.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board):
-    print("BOARD:\n", board)
-
-    with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-        ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").white().score(mate_score=10000) / 100
-            print("STOCKFISH EVAL: ", result)
+    # with chess.engine.SimpleEngine.popen_uci(
+    #     ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+    #     ) as sf:
+    #         result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").white().score(mate_score=10000) / 100
+    #         print("STOCKFISH EVAL: ", result)
     board = data_parser.split_bitboard(board)
     binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
     binary = binary.reshape(14, 8, 8)
@@ -25,24 +23,14 @@ def minimax_eval(board):
         
     with torch.no_grad():
         output = model_chess(board_tensor).item()
-        print("MODEL EVAL: ", output)
-        print("DIFFERENCE: ", result - output)
+        # print("MODEL EVAL: ", output)
+        # print("DIFFERENCE: ", result - output)
         return output
 
 
 def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
-        print("BOARD: \n", board)
-        
-        with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-        ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").white().score(mate_score=10000) / 100
-        print("STOCKFISH EVAL: ", result)
-        output = minimax_eval(board)
-        print("MODEL EVAL: ", output)
-        print("DIFFERENCE: ", result - output)
-        return output
+        return minimax_eval(board)
 
     if maximizing_player:
         min_eval = np.inf
@@ -84,11 +72,11 @@ def minimax_root(board, depth):
 
     return max_move
 
-if __name__ == "__main__":
-    board = chess.Board()
+# if __name__ == "__main__":
+#     board = chess.Board()
     
-    for move in board.legal_moves:
-        board.push(move)
-        minimax_eval(board)
-        board.pop()
-        sleep(5)
+#     for move in board.legal_moves:
+#         board.push(move)
+#         minimax_eval(board)
+#         board.pop()
+#         sleep(1)

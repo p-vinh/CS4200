@@ -3,7 +3,7 @@ import chess.pgn
 import pygame as pg
 import minmax
 import time
-
+import threading
 
 WIDTH = HEIGHT = 400
 DIMENSION = 8
@@ -77,34 +77,52 @@ def ai_move(board):
                     "White" if board.turn == chess.BLACK else "Black"
                 )
             )
-            return
+            return True
         elif future_board.is_stalemate():
             board.push(move)
             drawBoard()
             drawPieces(board)
             print("Stalemate. Neither player wins")
-            return
+            return True
         elif future_board.is_insufficient_material():
             board.push(move)
             drawBoard()
             drawPieces(board)
             print("Insufficient material. Neither player wins")
-            return
+            return True
 
     nb_moves = len(list(board.legal_moves))
-    move = None
-    if nb_moves > 30:
-        move = minmax.minimax_root(board, 4)
-    elif nb_moves > 10 and nb_moves <= 30:
-        move = minmax.minimax_root(board, 5)
-    else:
-        move = minmax.minimax_root(board, 7)
+    
+    def calculate_move():
+        nonlocal move
+        move = minmax.minimax_root(board, 3)
+        # if nb_moves > 30:
+        #     move = minmax.minimax_root(board, 4)
+        # elif nb_moves > 10 and nb_moves <= 30:
+        #     move = minmax.minimax_root(board, 5)
+        # else:
+        #     move = minmax.minimax_root(board, 7)
+    move_calculation_thread = threading.Thread(target=calculate_move)
+    move_calculation_thread.start()
         
-    board.push(move)
-    print(move)
+    while move_calculation_thread.is_alive():
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                exit()
+        # TO SEE THE BOARD WHILE THE AI IS THINKING
+        # drawBoard()
+        # drawPieces(board)
+        pg.display.flip()
+        clock.tick(60)
+    if move is not None:
+        board.push(move)
+        print(move)
     
     drawBoard()
     drawPieces(board)
+    
+    return False
 
 
 def main():
@@ -162,7 +180,9 @@ def main():
                         playerClicks = []
             else:
                 print("AI's turn")
-                ai_move(board)
+                if (ai_move(board)):
+                    running = False
+                
 
         clock.tick(60)
         pg.display.flip()
