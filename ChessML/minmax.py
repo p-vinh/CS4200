@@ -7,7 +7,7 @@ import torch
 from time import sleep
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\checkpoints\\epoch=210-step=26375.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\epoch=210-step=26375.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board):
@@ -57,7 +57,6 @@ def minimax(board, depth, alpha, beta, maximizing_player):
 
 
 def minimax_root(board, depth):
-    # Searching for the top 50% best moves. Restricts the search space
     max_eval = -np.inf
     max_move = None
 
