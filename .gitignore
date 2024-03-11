@@ -3,4 +3,4 @@ ChessML/Dataset/
 .env
 ChessML/archive/data.csv
 *.v2
-/lightning_logs/chessml
+/ChessML/lightning_logs/chessml
