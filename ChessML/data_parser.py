@@ -252,17 +252,16 @@ def test():
         count = cur.fetchone()[0]
         print(f"Number of rows in ChessData: {count}")
 
-        # cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 2")
-        # rows = cur.fetchall()
+        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
+        rows = cur.fetchone()
 
-
-        pass
+        return rows
             
     except Exception as e:
         print(f"An error occurred: {e}")
-    db = EvaluationDataset()
-    # db.delete()
-    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # db = EvaluationDataset()
+    # # db.delete()
+    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
 
 
 
