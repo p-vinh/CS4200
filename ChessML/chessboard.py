@@ -65,6 +65,9 @@ def drawPieces(board):
 
 
 def ai_move(board):
+    global stop_threads
+    stop_thread = False
+    
     for move in board.legal_moves:
         future_board = chess.Board(board.fen())
         future_board.push(move)
@@ -77,24 +80,29 @@ def ai_move(board):
                     "White" if board.turn == chess.BLACK else "Black"
                 )
             )
+            stop_thread = True
             return True
         elif future_board.is_stalemate():
             board.push(move)
             drawBoard()
             drawPieces(board)
             print("Stalemate. Neither player wins")
+            stop_thread = True
             return True
         elif future_board.is_insufficient_material():
             board.push(move)
             drawBoard()
             drawPieces(board)
             print("Insufficient material. Neither player wins")
+            stop_thread = True
             return True
 
     nb_moves = len(list(board.legal_moves))
     
     def calculate_move():
         nonlocal move
+        if stop_thread:
+            return
         move = minmax.minimax_root(board, 3)
         # if nb_moves > 30:
         #     move = minmax.minimax_root(board, 4)
