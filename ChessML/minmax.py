@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from time import sleep
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\epoch=210-step=26375.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V3-batch_size-20-layer_count-4.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board):
@@ -23,13 +23,14 @@ def minimax_eval(board):
 
     with torch.no_grad():
         threshold = 1
-        output = model_chess(board_tensor).item()
-        loss = F.l1_loss(torch.tensor([output]), torch.tensor([result])).item()
-
+        output = model_chess(board_tensor).item() # Invert the output to match the stockfish output and play as black
+        loss = abs(output - result)
+        print("Loss:", loss)
         if loss > threshold:
+            print("Stockfish:", result)
             return result
         else:
-            # print(f'Eval {result} Prediction {output:.2f} Loss {loss:.2f}')
+            print("Model:", output)
             return output
 
 
@@ -41,10 +42,9 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         max_eval = -np.inf
         for move in board.legal_moves:
             board.push(move)
-            _eval = minimax(board, depth - 1, alpha, beta, False)
+            max_eval = max(max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player))
             board.pop()
-            max_eval = max(max_eval, _eval)
-            alpha = max(alpha, _eval)
+            alpha = max(alpha, max_eval)
             if beta <= alpha:
                 return max_eval
         return max_eval
@@ -52,14 +52,26 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         min_eval = np.inf
         for move in board.legal_moves:
             board.push(move)
-            _eval = minimax(board, depth - 1, alpha, beta, True)
+            min_eval = min(min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player))
             board.pop()
-            min_eval = min(min_eval, _eval)
-            beta = min(beta, _eval)
+            beta = min(beta, min_eval)
             if beta <= alpha:
                 return min_eval
         return min_eval
 
+# Iterative deepening depth-first search: Combines depth-first search with breadth-first search
+# Space complexity: O(bd)
+# Time complexity: O(b^d)
+# Depth-limited version of depth-first search, increasing the depth limit with each iteration until a solution is found
+def iddfs(board, depth):
+    for i in range(depth):
+        result = dls(board, i)
+        if result is not None:
+            return result
+    return None
+
+def dls(board, depth, maximizing_player=True):
+    return minimax(board, depth, -np.inf, np.inf, not maximizing_player)
 
 def minimax_root(board, depth):
     max_eval = -np.inf
@@ -67,20 +79,19 @@ def minimax_root(board, depth):
 
     for move in board.legal_moves:
         board.push(move)
-        value = minimax(board, depth - 1, -np.inf, np.inf, False)
+        # value = minimax(board, depth - 1, -np.inf, np.inf, False)
+        value = iddfs(board, depth)
         board.pop()
 
-        if value >= max_eval:
+        if value is not None and value >= max_eval:
             max_eval = value
             max_move = move
 
     return max_move
 
 if __name__ == "__main__":
-    for i in range(10):
-        game = data_parser.test()
-        board = chess.Board(game[1])
-        minimax_eval(board)
-        print("FEN:", board.fen())
-        print(board)
-        sleep(1)
+    game = data_parser.test()
+    board = chess.Board(game[1])
+    print(minimax_eval(board))
+    print("FEN:", board.fen())
+    print(board)

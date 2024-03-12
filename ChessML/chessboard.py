@@ -4,6 +4,8 @@ import pygame as pg
 import minmax
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
+
 
 WIDTH = HEIGHT = 400
 DIMENSION = 8
@@ -67,35 +69,35 @@ def drawPieces(board):
 def ai_move(board):
     global stop_threads
     stop_thread = False
-    
-    for move in board.legal_moves:
-        future_board = chess.Board(board.fen())
-        future_board.push(move)
-        if future_board.is_checkmate():
-            board.push(move)
-            drawBoard()
-            drawPieces(board)
-            print(
-                "Checkmate. {} wins".format(
-                    "White" if board.turn == chess.BLACK else "Black"
-                )
-            )
-            stop_thread = True
-            return True
-        elif future_board.is_stalemate():
-            board.push(move)
-            drawBoard()
-            drawPieces(board)
-            print("Stalemate. Neither player wins")
-            stop_thread = True
-            return True
-        elif future_board.is_insufficient_material():
-            board.push(move)
-            drawBoard()
-            drawPieces(board)
-            print("Insufficient material. Neither player wins")
-            stop_thread = True
-            return True
+    move = None
+    # for move in board.legal_moves:
+    #     future_board = chess.Board(board.fen())
+    #     future_board.push(move)
+    #     if future_board.is_checkmate():
+    #         board.push(move)
+    #         drawBoard()
+    #         drawPieces(board)
+    #         print(
+    #             "Checkmate. {} wins".format(
+    #                 "White" if board.turn == chess.BLACK else "Black"
+    #             )
+    #         )
+    #         stop_thread = True
+    #         return True
+    #     elif future_board.is_stalemate():
+    #         board.push(move)
+    #         drawBoard()
+    #         drawPieces(board)
+    #         print("Stalemate. Neither player wins")
+    #         stop_thread = True
+    #         return True
+    #     elif future_board.is_insufficient_material():
+    #         board.push(move)
+    #         drawBoard()
+    #         drawPieces(board)
+    #         print("Insufficient material. Neither player wins")
+    #         stop_thread = True
+    #         return True
 
     nb_moves = len(list(board.legal_moves))
     
@@ -103,13 +105,12 @@ def ai_move(board):
         nonlocal move
         if stop_thread:
             return
-        move = minmax.minimax_root(board, 3)
-        # if nb_moves > 30:
-        #     move = minmax.minimax_root(board, 4)
-        # elif nb_moves > 10 and nb_moves <= 30:
-        #     move = minmax.minimax_root(board, 5)
-        # else:
-        #     move = minmax.minimax_root(board, 7)
+        if nb_moves > 30:
+            move = minmax.minimax_root(board, 4)
+        elif nb_moves > 10 and nb_moves <= 30:
+            move = minmax.minimax_root(board, 5)
+        else:
+            move = minmax.minimax_root(board, 7)
     move_calculation_thread = threading.Thread(target=calculate_move)
     move_calculation_thread.start()
         
@@ -131,7 +132,6 @@ def ai_move(board):
     drawPieces(board)
     
     return False
-
 
 def main():
     pg.display.set_caption("Chess")
@@ -188,9 +188,17 @@ def main():
                         playerClicks = []
             else:
                 print("AI's turn")
+                if (board.is_checkmate()):
+                    print(
+                        "Checkmate. {} wins".format(
+                            "White" if board.turn == chess.BLACK else "Black"
+                        )
+                    )
+                    running = False
+                    return
                 if (ai_move(board)):
                     running = False
-                
+                    return
 
         clock.tick(60)
         pg.display.flip()
