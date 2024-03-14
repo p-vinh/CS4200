@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "java",
+            "type": "debugpy",
             "name": "Current File",
             "request": "launch",
-            "mainClass": "${file}"
+            "program": "${file}",
         },
         {
             "type": "java",

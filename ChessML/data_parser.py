@@ -143,7 +143,8 @@ class EvaluationDataset():
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
-            return result.relative.score(mate_score=5) / 100
+            eval = result.relative.score() / 100
+            return eval
         
         
     def delete(self):
