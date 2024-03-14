@@ -48,8 +48,13 @@ class EvaluationDataset():
             self.cursor = self.db.cursor()
             self.cursor.execute("SELECT bin, eval FROM ChessData ORDER BY RAND() LIMIT 1")
             result = self.cursor.fetchone()
-            # convert binary to numpy array                        
-            return self.convert_to_tensor(result[0]), result[1]
+            # convert binary to numpy array
+            binary = BytesIO(result[0])
+            binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
+            binary = binary.reshape(14, 8, 8)
+            binary = torch.from_numpy(binary).to(torch.float16)
+                        
+            return binary, result[1]
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -60,17 +65,16 @@ class EvaluationDataset():
             self.cursor.execute("SELECT bin, eval FROM ChessData WHERE id = %s", (idx + 1,))
             result = self.cursor.fetchone()
             # convert binary to numpy array
-            return self.convert_to_tensor(result[0]), result[1]
+            binary = BytesIO(result[0])
+            binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
+            binary = binary.reshape(14, 8, 8)
+
+            binary = torch.from_numpy(binary).to(torch.float16)
+            
+            return binary, result[1]
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
-    
-    def convert_to_tensor(self, bytes_b):
-        binary = BytesIO(bytes_b)
-        binary = numpy.frombuffer(binary, dtype=numpy.uint8)
-        binary = binary.reshape(14, 8, 8)
-        binary = torch.from_numpy(binary).to(torch.float16)
-        return binary
         
     def __len__(self):
         try:
