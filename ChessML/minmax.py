@@ -7,14 +7,11 @@ import torch.nn.functional as F
 from time import sleep
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V3-batch_size-20-layer_count-4.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\batch_size-1024-layer_count-4.ckpt")
 
 # Eval function from the model for the current position
-def minimax_eval(board):
-    with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-        ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").white().score(mate_score=100) / 100
+def minimax_eval(board, color=True):
+    result = stock_fish_eval(board, 16)
 
     board = data_parser.split_bitboard(board)
     binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
@@ -24,6 +21,8 @@ def minimax_eval(board):
     with torch.no_grad():
         threshold = 1.5
         output = model_chess(board_tensor).item() # Invert the output to match the stockfish output and play as black
+        if not color:
+            output = -output
         loss = abs(output - result)
         print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
         # if loss > threshold:
@@ -31,10 +30,25 @@ def minimax_eval(board):
         # else:
         return output
 
+def stock_fish_eval(board, depth):
+    with chess.engine.SimpleEngine.popen_uci(
+        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+    ) as sf:
+        result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
+        print(board)
+        
+        if result.relative.is_mate():
+            if result.relative.mate() > 0:
+                return 15
+            else:
+                return -15
+            
+        eval = result.relative.score() / 100
+        return eval
 
 def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
+        return minimax_eval(board, maximizing_player)
 
     if maximizing_player:
         max_eval = -np.inf
@@ -77,8 +91,8 @@ def minimax_root(board, depth):
 
     for move in board.legal_moves:
         board.push(move)
-        # value = minimax(board, depth - 1, -np.inf, np.inf, False)
-        value = iddfs(board, depth)
+        value = minimax(board, depth - 1, -np.inf, np.inf, False)
+        # value = iddfs(board, depth)
         board.pop()
 
         if value is not None and value >= max_eval:
