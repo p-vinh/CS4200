@@ -21,7 +21,7 @@ class EvaluationModel(pl.LightningModule):
 
         # for every layer decrease the size by half, keep track of previous size
         prev_size = 896
-        for i in range(1, layer_count + 1):
+        for i in range(1, layer_count):
             layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
             layers.append((f"relu-{i}", nn.ReLU()))
             prev_size = prev_size // 2
