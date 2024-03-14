@@ -46,7 +46,7 @@ class EvaluationModel(pl.LightningModule):
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
-        return DataLoader(dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True)
         
 
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     #  {"layer_count": 6, "batch_size": 1024},
     ]
     for config in configs:
-        version_name = f'batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+        version_name = f'V2batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
