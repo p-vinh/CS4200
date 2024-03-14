@@ -24,7 +24,7 @@ def minimax_eval(board, color=True):
         if not color:
             output = -output
         loss = abs(output - result)
-        print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
+        # print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
         # if loss > threshold:
         #     return result
         # else:
@@ -35,7 +35,7 @@ def stock_fish_eval(board, depth):
         ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
     ) as sf:
         result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
-        print(board)
+        # print(board)
         
         if result.relative.is_mate():
             if result.relative.mate() > 0:
