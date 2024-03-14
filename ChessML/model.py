@@ -21,12 +21,12 @@ class EvaluationModel(pl.LightningModule):
 
         # for every layer decrease the size by half, keep track of previous size
         prev_size = 896
-        for i in range(1, layer_count + 1):
+        for i in range(1, layer_count):
             layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
             layers.append((f"relu-{i}", nn.ReLU()))
             prev_size = prev_size // 2
         layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
-
+        print(layers)
         self.seq = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
@@ -47,7 +47,7 @@ class EvaluationModel(pl.LightningModule):
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
         return DataLoader(
-            dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True
+            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True
         )
 
 
@@ -83,7 +83,6 @@ if __name__ == "__main__":
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
 
-        break
     # model = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
     # board = chess.Board()
     # print(minimax_eval(board))
