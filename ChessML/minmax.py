@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from time import sleep
 
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\batch_size-1024-layer_count-4.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V2batch_size-1024-layer_count-4.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board, color=True):
@@ -92,7 +92,7 @@ def minimax_root(board, depth):
     for move in board.legal_moves:
         board.push(move)
         value = minimax(board, depth - 1, -np.inf, np.inf, False)
-        # value = iddfs(board, depth)
+        #value = iddfs(board, depth)
         board.pop()
 
         if value is not None and value >= max_eval:
