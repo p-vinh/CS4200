@@ -33,31 +33,10 @@ class EvaluationDataset():
         print("Connecting to MySQL database")
         self.db = self.connect()
         self.cursor = self.db.cursor()
-        self.cursor.execute("CREATE DATABASE IF NOT EXISTS chessai")
-        self.cursor.connection.commit()
-        self.cursor.execute("USE chessai")
-        self.cursor.execute(
-            "CREATE TABLE IF NOT EXISTS ChessData (id INT NOT NULL, fen VARCHAR(100) NOT NULL, bin BLOB NOT NULL, eval FLOAT NOT NULL, PRIMARY KEY (id))"
-        )
+        
         self.cursor.execute("SHOW TABLES")
         print("Current database: ", self.cursor.fetchall())
-        self.query = "SELECT * FROM ChessData"
-
-    def __next__(self):
-        try:
-            self.cursor = self.db.cursor()
-            self.cursor.execute("SELECT bin, eval FROM ChessData ORDER BY RAND() LIMIT 1")
-            result = self.cursor.fetchone()
-            # convert binary to numpy array
-            binary = BytesIO(result[0])
-            binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
-            binary = binary.reshape(14, 8, 8)
-            binary = torch.from_numpy(binary).to(torch.float16)
-                        
-            return binary, result[1]
-        except Exception as e:
-            print("Database connection failed due to {}".format(e))
-            raise
+    
     
     def __getitem__(self, idx):
         try:
@@ -96,13 +75,6 @@ class EvaluationDataset():
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             
-    def __iter__(self):
-        conn = self.connect()
-        cursor = conn.cursor()
-        cursor.execute(self.query)
-        for row in cursor:
-            yield row
-  
         
     def import_game(self, pgn_file):
         try:
@@ -167,6 +139,7 @@ class EvaluationDataset():
     def close(self):
         try:
             self.db.close()
+            print("Database connection closed")
         except pymysql.err.Error as e:
             if str(e) != "Already closed":
                 raise
