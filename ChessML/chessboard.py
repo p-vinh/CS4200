@@ -105,7 +105,7 @@ def ai_move(board):
         nonlocal move
         if stop_thread:
             return
-        move = minmax.minimax_root(board, 2)
+        move = minmax.minimax_root(board, 3)
         # if nb_moves > 30:
         #     move = minmax.minimax_root(board, 4)
         # elif nb_moves > 10 and nb_moves <= 30:

@@ -26,7 +26,7 @@ class EvaluationModel(pl.LightningModule):
             layers.append((f"relu-{i}", nn.ReLU()))
             prev_size = prev_size // 2
         layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
-        print(layers)
+
         self.seq = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):

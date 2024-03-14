@@ -212,29 +212,29 @@ def split_bitboard(board):
 
 
 def test():
-    # try:
-    #     conn = pymysql.connect(
-    #         host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-    #         user="admin",
-    #         password="chessengine",
-    #         db="chessai",
-    #     )
+    try:
+        conn = pymysql.connect(
+            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+            user="admin",
+            password="chessengine",
+            db="chessai",
+        )
 
-    #     cur = conn.cursor()
-    #     cur.execute("SELECT COUNT(*) FROM ChessData")
-    #     count = cur.fetchone()[0]
-    #     print(f"Number of rows in ChessData: {count}")
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM ChessData")
+        count = cur.fetchone()[0]
+        print(f"Number of rows in ChessData: {count}")
 
-    #     cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
-    #     rows = cur.fetchall()
+        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
+        rows = cur.fetchall()
 
-    #     return rows
+        return rows
             
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
-    db = EvaluationDataset()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    # db = EvaluationDataset()
     # db.delete()
-    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
 
 
 
