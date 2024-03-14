@@ -52,7 +52,7 @@ class EvaluationModel(pl.LightningModule):
 
 if __name__ == "__main__":
     configs = [
-    {"layer_count": 4, "batch_size": 24},
+    {"layer_count": 4, "batch_size": 1024},
     #  {"layer_count": 6, "batch_size": 1024},
     ]
     for config in configs:
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=1000)
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=300)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
