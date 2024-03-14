@@ -33,7 +33,10 @@ class EvaluationDataset():
         print("Connecting to MySQL database")
         self.db = self.connect()
         self.cursor = self.db.cursor()
-    
+        self.cursor.execute("USE chessai")
+        self.cursor.execute("SHOW TABLES")
+        print("Current database: ", self.cursor.fetchall())
+
     def __getitem__(self, idx):
         try:
             self.cursor = self.db.cursor()
