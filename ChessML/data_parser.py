@@ -73,9 +73,6 @@ class EvaluationDataset():
             binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
             binary = binary.reshape(14, 8, 8)
 
-            val = min(result[1], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
-            val = max(val, -15) # Checkmate score is -10000 so we bound it to -15, otherwise it's too low for the network
-            
             binary = torch.from_numpy(binary).to(torch.float16)
             
             return binary, val
@@ -150,7 +147,7 @@ class EvaluationDataset():
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
-            return result.white().score(mate_score=10000) / 100
+            return result.black().score(mate_score=5) / 100
         
         
     def delete(self):
@@ -252,8 +249,8 @@ def test():
         count = cur.fetchone()[0]
         print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 1")
-        rows = cur.fetchone()
+        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
+        rows = cur.fetchall()
 
         return rows
             

@@ -14,7 +14,7 @@ def minimax_eval(board):
     with chess.engine.SimpleEngine.popen_uci(
         ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
         ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").black().score(mate_score=10000) / 100
+            result = sf.analyse(board, chess.engine.Limit(depth=16)).get("score").white().score(mate_score=100) / 100
 
     board = data_parser.split_bitboard(board)
     binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
@@ -22,16 +22,14 @@ def minimax_eval(board):
     board_tensor = torch.from_numpy(binary)
 
     with torch.no_grad():
-        threshold = 1
+        threshold = 1.5
         output = model_chess(board_tensor).item() # Invert the output to match the stockfish output and play as black
         loss = abs(output - result)
-        print("Loss:", loss)
-        if loss > threshold:
-            print("Stockfish:", result)
-            return result
-        else:
-            print("Model:", output)
-            return output
+        print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
+        # if loss > threshold:
+        #     return result
+        # else:
+        return output
 
 
 def minimax(board, depth, alpha, beta, maximizing_player):
@@ -70,8 +68,8 @@ def iddfs(board, depth):
             return result
     return None
 
-def dls(board, depth, maximizing_player=True):
-    return minimax(board, depth, -np.inf, np.inf, not maximizing_player)
+def dls(board, depth):
+    return minimax(board, depth, -np.inf, np.inf, False)
 
 def minimax_root(board, depth):
     max_eval = -np.inf
@@ -90,8 +88,10 @@ def minimax_root(board, depth):
     return max_move
 
 if __name__ == "__main__":
-    game = data_parser.test()
-    board = chess.Board(game[1])
-    print(minimax_eval(board))
-    print("FEN:", board.fen())
-    print(board)
+    games = data_parser.test()
+    
+    for game in games:
+        board = chess.Board(game[1])
+        minimax_eval(board)
+        print("FEN:", board.fen())
+        print(board)
