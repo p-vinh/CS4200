@@ -52,13 +52,9 @@ class EvaluationDataset():
             binary = BytesIO(result[0])
             binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
             binary = binary.reshape(14, 8, 8)
-
-            val = min(result[1], 15) # Checkmate score is 10000 so we bound it to 15, otherwise it's too high for the network
-            val = max(val, -15) # Checkmate score is -10000 so we bound it to -15, otherwise it's too low for the network
-            
             binary = torch.from_numpy(binary).to(torch.float16)
                         
-            return binary, val
+            return binary, result[1]
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -75,7 +71,7 @@ class EvaluationDataset():
 
             binary = torch.from_numpy(binary).to(torch.float16)
             
-            return binary, val
+            return binary, result[1]
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -147,7 +143,7 @@ class EvaluationDataset():
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
-            return result.black().score(mate_score=5) / 100
+            return result.relative.score(mate_score=5) / 100
         
         
     def delete(self):
@@ -236,29 +232,29 @@ def split_bitboard(board):
 
 
 def test():
-    try:
-        conn = pymysql.connect(
-            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-            user="admin",
-            password="chessengine",
-            db="chessai",
-        )
+    # try:
+    #     conn = pymysql.connect(
+    #         host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+    #         user="admin",
+    #         password="chessengine",
+    #         db="chessai",
+    #     )
 
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM ChessData")
-        count = cur.fetchone()[0]
-        print(f"Number of rows in ChessData: {count}")
+    #     cur = conn.cursor()
+    #     cur.execute("SELECT COUNT(*) FROM ChessData")
+    #     count = cur.fetchone()[0]
+    #     print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
-        rows = cur.fetchall()
+    #     cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
+    #     rows = cur.fetchall()
 
-        return rows
+    #     return rows
             
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
-    # # db.delete()
-    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    db = EvaluationDataset()
+    # db.delete()
+    db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
 
 
 
