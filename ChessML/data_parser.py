@@ -143,6 +143,13 @@ class EvaluationDataset():
         ) as sf:
             result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             print(board)
+            
+            if result.relative.is_mate():
+                if result.relative.mate() > 0:
+                    return 15
+                else:
+                    return -15
+                
             eval = result.relative.score() / 100
             return eval
         
