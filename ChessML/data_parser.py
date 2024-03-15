@@ -10,6 +10,7 @@ import base64
 import traceback
 import torch
 from dotenv import load_dotenv
+import math
 """
 EvaluationDataset takes single random row from the SQLite table and preprocesses it by extracting the
 binary value in raw bytes, converting those bytes to floats using numpy’s frombuffer and unpackbits functions,
@@ -108,21 +109,21 @@ class EvaluationDataset():
     
 
     # Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
-    def stock_fish_eval(self, board, depth):
-        with chess.engine.SimpleEngine.popen_uci(
-            ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-        ) as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
-            print(board)
+def stock_fish_eval( board, depth):
+    with chess.engine.SimpleEngine.popen_uci(
+        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
+    ) as sf:
+        result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
+                    
+        if result.white().is_mate():
+            if result.white().mate() > 0:
+                return 1 # White wins
+            else:
+                return 0 # Black wins
             
-            if result.black().is_mate():
-                if result.black().mate() > 0:
-                    return 15
-                else:
-                    return -15
-                
-            eval = result.black().score() / 100
-            return eval
+        eval = result.white().score()
+        normalized_eval = (eval + 100) / 200 # Normalize between 0 and 1
+        return normalized_eval 
         
         
     def delete(self):
@@ -212,29 +213,31 @@ def split_bitboard(board):
 
 
 def test():
-    try:
-        conn = pymysql.connect(
-            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-            user="admin",
-            password="chessengine",
-            db="chessai",
-        )
+    # try:
+    #     conn = pymysql.connect(
+    #         host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+    #         user="admin",
+    #         password="chessengine",
+    #         db="chessai",
+    #     )
 
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM ChessData")
-        count = cur.fetchone()[0]
-        print(f"Number of rows in ChessData: {count}")
+    #     cur = conn.cursor()
+    #     cur.execute("SELECT COUNT(*) FROM ChessData")
+    #     count = cur.fetchone()[0]
+    #     print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
-        rows = cur.fetchall()
+    #     cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
+    #     rows = cur.fetchall()
 
-        return rows
+    #     return rows
             
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
     # db = EvaluationDataset()
     # db.delete()
     # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
+    board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/2p5/1P3P1P/P5P1/b1BQ1KnR w kq - 0 15")
+    print(stock_fish_eval(board, 29))
 
 
 

@@ -8,7 +8,7 @@ from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 import random
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V2batch_size-1024-layer_count-4.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\epoch=210-step=26375.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board):
@@ -36,14 +36,15 @@ def stock_fish_eval(board, depth):
         result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
         # print(board)
         
-        if result.black().is_mate():
-            if result.black().mate() > 0:
+        if result.white().is_mate():
+            if result.white().mate() > 0:
                 return 15
             else:
                 return -15
             
-        eval = result.black().score() / 100
+        eval = result.white().score() / 100
         return eval
+    
 transposition_table = {}
 
 def minimax(board, depth, alpha, beta, maximizing_player):
@@ -92,14 +93,14 @@ def iddfs(board, depth):
 def dls(board, depth):
     return minimax(board, depth, -9999, 9999, False)
 
-def minimax_root(board, depth):
+def minimax_root(board, depth, maximizing_player=True):
     with ThreadPoolExecutor() as executor:
         futures = []
         moves = sorted(board.legal_moves, key=lambda move: board.is_capture(move), reverse=True)
         for move in moves:
             future_board = chess.Board(board.fen())
             future_board.push(move)
-            futures.append((move, executor.submit(minimax, future_board, depth - 1, -9999, 9999, False)))
+            futures.append((move, executor.submit(minimax, future_board, depth - 1, -9999, 9999, not maximizing_player)))
         results = [(move, future.result()) for move, future in futures]
 
     best_move = max(results, key=lambda x: x[1])[0]
@@ -119,16 +120,20 @@ def minimax_root(board, depth):
 
     # return max_move
 
-# if __name__ == "__main__":
-#         # games = data_parser.test()
-#     board = chess.Board()
-#     while board.is_game_over() == False:
-#         board.push(random.choice(list(board.legal_moves)))
-#         print("FEN:", board.fen())
-#         print(board)
-#         move = minimax_root(board, 2)
+if __name__ == "__main__":
+    # games = data_parser.test()
+    # for game in games:
+    #     board = chess.Board(game[1])
+    #     print(minimax_eval(board))
 
-#         board.push(move)
+    board = chess.Board()
+    while board.is_game_over() == False:
+        board.push(minimax_root(board, 4, True))
+        print("FEN:", board.fen())
+        print(board)
+        move = minimax_root(board, 4, False)
 
-#         print("Post-move")
-#         print(board)
+        board.push(move)
+
+        print("Post-move")
+        print(board)

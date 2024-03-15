@@ -75,13 +75,13 @@ def ai_move(board):
         nonlocal move
         if stop_thread:
             return
-        move = minmax.minimax_root(board, 4)
-        # if nb_moves > 30:
-        #     move = minmax.minimax_root(board, 4)
-        # elif nb_moves > 10 and nb_moves <= 30:
-        #     move = minmax.minimax_root(board, 5)
-        # else:
-        #     move = minmax.minimax_root(board, 7)
+        # move = minmax.minimax_root(board, 4)
+        if nb_moves > 30:
+            move = minmax.minimax_root(board, 4)
+        elif nb_moves > 10 and nb_moves <= 30:
+            move = minmax.minimax_root(board, 5)
+        else:
+            move = minmax.minimax_root(board, 7)
     move_calculation_thread = threading.Thread(target=calculate_move)
     move_calculation_thread.start()
         
@@ -90,9 +90,7 @@ def ai_move(board):
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-        # TO SEE THE BOARD WHILE THE AI IS THINKING
-        # drawBoard()
-        # drawPieces(board)        
+     
         pg.display.flip()
         clock.tick(60)
     if move is not None:
