@@ -5,7 +5,7 @@ from model import EvaluationModel
 import torch
 import torch.nn.functional as F
 from time import sleep
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import random
 
 model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V2batch_size-1024-layer_count-4.ckpt")
@@ -93,14 +93,13 @@ def dls(board, depth):
     return minimax(board, depth, -9999, 9999, False)
 
 def minimax_root(board, depth):
-    with ProcessPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         futures = []
         moves = sorted(board.legal_moves, key=lambda move: board.is_capture(move), reverse=True)
         for move in moves:
             future_board = chess.Board(board.fen())
             future_board.push(move)
             futures.append((move, executor.submit(minimax, future_board, depth - 1, -9999, 9999, False)))
-            
         results = [(move, future.result()) for move, future in futures]
 
     best_move = max(results, key=lambda x: x[1])[0]
@@ -120,16 +119,16 @@ def minimax_root(board, depth):
 
     # return max_move
 
-if __name__ == "__main__":
-        # games = data_parser.test()
-    board = chess.Board()
-    while board.is_game_over() == False:
-        board.push(random.choice(list(board.legal_moves)))
-        print("FEN:", board.fen())
-        print(board)
-        move = minimax_root(board, 2)
+# if __name__ == "__main__":
+#         # games = data_parser.test()
+#     board = chess.Board()
+#     while board.is_game_over() == False:
+#         board.push(random.choice(list(board.legal_moves)))
+#         print("FEN:", board.fen())
+#         print(board)
+#         move = minimax_root(board, 2)
 
-        board.push(move)
+#         board.push(move)
 
-        print("Post-move")
-        print(board)
+#         print("Post-move")
+#         print(board)
