@@ -6,7 +6,6 @@ import chess
 import pymysql
 import sys
 import os
-import base64
 import traceback
 import torch
 from dotenv import load_dotenv
