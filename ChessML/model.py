@@ -42,11 +42,11 @@ class EvaluationModel(pl.LightningModule):
         # Model V3
         layers.append(("linear-0", nn.Linear(896, 2048)))
         layers.append(("relu-0", nn.ReLU()))
-        for i in range(6):
+        for i in range(1, 6):
             layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
             layers.append((f"relu-{i}", nn.ReLU()))
 
-        layers.append(("linear-7", nn.Linear(2048, 1)))
+        layers.append(("linear-6", nn.Linear(2048, 1)))
         
         self.seq = nn.Sequential(OrderedDict(layers))
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     ]
     for config in configs:
         version_name = (
-            f'V2batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+            f'V3batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         )
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
