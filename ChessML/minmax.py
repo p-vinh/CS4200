@@ -4,11 +4,12 @@ import data_parser
 from model import EvaluationModel
 import torch
 import torch.nn.functional as F
-from time import sleep
+import time
 from concurrent.futures import ThreadPoolExecutor
 import random
+import threading
 
-model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\epoch=210-step=26375.ckpt")
+model_chess = EvaluationModel.load_from_checkpoint(".\\ChessML\\checkpoints\\V2batch_size-1024-layer_count-5.ckpt")
 
 # Eval function from the model for the current position
 def minimax_eval(board):
@@ -38,9 +39,9 @@ def stock_fish_eval(board, depth):
         
         if result.white().is_mate():
             if result.white().mate() > 0:
-                return 15
+                return 1
             else:
-                return -15
+                return 0
             
         eval = result.white().score() / 100
         return eval
@@ -51,10 +52,10 @@ def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
         return minimax_eval(board)
 
-    board_hash = hash(board.fen())
+    # board_hash = hash(board.fen())
 
-    if board_hash in transposition_table:
-        return transposition_table[board_hash]
+    # if board_hash in transposition_table:
+    #     return transposition_table[board_hash]
 
     if maximizing_player:
         max_eval = -9999
@@ -65,7 +66,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
             alpha = max(alpha, max_eval)
             if beta <= alpha:
                 return max_eval
-        transposition_table[board_hash] = max_eval
+        # transposition_table[board_hash] = max_eval
         return max_eval
     else:
         min_eval = 9999
@@ -76,49 +77,50 @@ def minimax(board, depth, alpha, beta, maximizing_player):
             beta = min(beta, min_eval)
             if beta <= alpha:
                 return min_eval
-        transposition_table[board_hash] = min_eval
+        # transposition_table[board_hash] = min_eval
         return min_eval
 
 # Iterative deepening depth-first search: Combines depth-first search with breadth-first search
 # Space complexity: O(bd)
 # Time complexity: O(b^d)
 # Depth-limited version of depth-first search, increasing the depth limit with each iteration until a solution is found
-def iddfs(board, depth):
-    for i in range(depth):
-        result = dls(board, i)
-        if result is not None:
-            return result
-    return None
+# or a time limit is reached
+def minimax_root(board, depth, time_limit, maximizing_player=True):
+    best_move = None
+    best_value = -9999 if maximizing_player else 9999
 
-def dls(board, depth):
-    return minimax(board, depth, -9999, 9999, False)
+    start_time = time.time()
 
-def minimax_root(board, depth, maximizing_player=True):
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        moves = sorted(board.legal_moves, key=lambda move: board.is_capture(move), reverse=True)
+    for depth in range(1, depth + 1):
+        if time.time() - start_time > time_limit:
+            print(f"Depth: {depth} Best move: {best_move} Value: {best_value}")
+            break
+        moves = sorted(board.legal_moves, key=lambda move: random.random())
         for move in moves:
             future_board = chess.Board(board.fen())
             future_board.push(move)
-            futures.append((move, executor.submit(minimax, future_board, depth - 1, -9999, 9999, not maximizing_player)))
-        results = [(move, future.result()) for move, future in futures]
 
-    best_move = max(results, key=lambda x: x[1])[0]
+            result = None
+
+            def target():
+                nonlocal result
+                result = minimax(chess.Board(future_board.fen()), depth - 1, -9999, 9999, not maximizing_player)
+            thread = threading.Thread(target=target)
+            thread.start()
+            thread.join(time_limit - (time.time() - start_time))
+
+            if thread.is_alive():
+                print(f"Depth: {depth} Best move: {best_move} Value: {best_value}")
+                break
+
+            if maximizing_player and result > best_value:
+                best_value = result
+                best_move = move
+            elif not maximizing_player and result < best_value:
+                best_value = result
+                best_move = move
+            
     return best_move
-    # max_eval = -np.inf
-    # max_move = None
-
-    # for move in board.legal_moves:
-    #     board.push(move)
-    #     value = minimax(board, depth - 1, -9999, 9999, False)
-    #     # value = iddfs(board, depth)
-    #     board.pop()
-
-    #     if value is not None and value >= max_eval:
-    #         max_eval = value
-    #         max_move = move
-
-    # return max_move
 
 if __name__ == "__main__":
     # games = data_parser.test()
@@ -128,12 +130,13 @@ if __name__ == "__main__":
 
     board = chess.Board()
     while board.is_game_over() == False:
-        board.push(minimax_root(board, 4, True))
+        move = minimax_root(board, 4, 10, True)
+        board.push(move)
         print("FEN:", board.fen())
         print(board)
-        move = minimax_root(board, 4, False)
-
+        move = minimax_root(board, 4, 10, False)
         board.push(move)
-
         print("Post-move")
+        print("FEN:", board.fen())
         print(board)
+    print(f"Player {board.result()} won the game!")

@@ -122,7 +122,7 @@ def stock_fish_eval( board, depth):
                 return 0 # Black wins
             
         eval = result.white().score()
-        normalized_eval = (eval + 100) / 200 # Normalize between 0 and 1
+        normalized_eval = (eval + 3000) / 6000 # Normalize between 0 and 1
         return normalized_eval 
         
         
@@ -236,8 +236,8 @@ def test():
     # db = EvaluationDataset()
     # db.delete()
     # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/2p5/1P3P1P/P5P1/b1BQ1KnR w kq - 0 15")
-    print(stock_fish_eval(board, 29))
+    board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/3b4/1Pp2PPP/P1Q5/2B2KnR w kq - 0 17")
+    print(stock_fish_eval(board, 16))
 
 
 
