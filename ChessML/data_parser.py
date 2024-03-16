@@ -16,7 +16,7 @@ EvaluationDataset takes single random row from the SQLite table and preprocesses
 binary value in raw bytes, converting those bytes to floats using numpy’s frombuffer and unpackbits functions,
 and forming the required 808 length float array as input. The evaluation value is is extracted and bounded between -15 and 15.
 """
-DEPTH = 16
+DEPTH = 30
 
 
 # ======================AWS RDS MySQL Connection===============================
@@ -109,21 +109,19 @@ class EvaluationDataset():
     
 
     # Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
-def stock_fish_eval( board, depth):
-    with chess.engine.SimpleEngine.popen_uci(
-        ".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe"
-    ) as sf:
-        result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
-                    
-        if result.white().is_mate():
-            if result.white().mate() > 0:
-                return 1 # White wins
-            else:
-                return 0 # Black wins
+    def stock_fish_eval(self, board, depth):
+        with chess.engine.SimpleEngine.popen_uci(".\\ChessML\\stockfish\\stockfish-windows-x86-64-avx2.exe") as sf:
+            result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
             
-        eval = result.white().score()
-        normalized_eval = (eval + 3000) / 6000 # Normalize between 0 and 1
-        return normalized_eval 
+            if result.white().is_mate():
+                if result.white().mate() > 0:
+                    return 1 # White wins
+                else:
+                    return 0 # Black wins
+                
+            eval = result.white().score() / 100
+            normalized_eval = 1 / (1 + math.exp(-eval))
+            return normalized_eval
         
         
     def delete(self):
@@ -233,14 +231,11 @@ def test():
             
     # except Exception as e:
     #     print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
+    db = EvaluationDataset()
     # db.delete()
-    # db.import_game(".\\ChessML\\Dataset\\lichess_db_standard_rated_2024-02.pgn")
-    board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/3b4/1Pp2PPP/P1Q5/2B2KnR w kq - 0 17")
-    print(stock_fish_eval(board, 16))
-
-
-
+    db.import_game(".\\ChessML\\Dataset\\lichess_elite_2021-12.pgn")
+    # board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/3b4/1Pp2PPP/P1Q5/2B2KnR w kq - 0 17")
+    # print(stock_fish_eval(board, 16))
 
 
 if __name__ == "__main__":
