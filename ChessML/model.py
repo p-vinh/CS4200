@@ -13,11 +13,13 @@ global model
 
 
 class EvaluationModel(pl.LightningModule):
-    def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=5):
+    def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=4):
         super(EvaluationModel, self).__init__()
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         layers = []
+        
+        # Model V1
         # layers.append(("linear-0", nn.Linear(896, 896)))
         # layers.append(("relu-0", nn.ReLU()))
         # layers.append(("linear-1", nn.Linear(896, 448)))
@@ -28,14 +30,24 @@ class EvaluationModel(pl.LightningModule):
         # layers.append(("relu-3", nn.ReLU()))
         # layers.append(("linear-4", nn.Linear(112, 1)))
         
+        # Model V2
         # for every layer decrease the size by half, keep track of previous size
-        prev_size = 896
-        for i in range(1, layer_count):
-            layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
-            layers.append((f"relu-{i}", nn.ReLU()))
-            prev_size = prev_size // 2
-        layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
+        # prev_size = 896
+        # for i in range(1, layer_count):
+        #     layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
+        #     layers.append((f"relu-{i}", nn.ReLU()))
+        #     prev_size = prev_size // 2
+        # layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
 
+        # Model V3
+        layers.append(("linear-0", nn.Linear(896, 2048)))
+        layers.append(("relu-0", nn.ReLU()))
+        for i in range(6):
+            layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
+            layers.append((f"relu-{i}", nn.ReLU()))
+
+        layers.append(("linear-7", nn.Linear(2048, 1)))
+        
         self.seq = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
@@ -91,7 +103,3 @@ if __name__ == "__main__":
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
-
-    # model = EvaluationModel.load_from_checkpoint(".\\checkpoints\\1709758613-batch_size-512-layer_count-4.ckpt")
-    # board = chess.Board()
-    # print(minimax_eval(board))

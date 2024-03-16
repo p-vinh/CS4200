@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import math
 """
 EvaluationDataset takes single random row from the SQLite table and preprocesses it by extracting the
-binary value in raw bytes, converting those bytes to floats using numpy’s frombuffer and unpackbits functions,
+binary value in raw bytes, converting those bytes to floats using numpy's frombuffer and unpackbits functions,
 and forming the required 808 length float array as input. The evaluation value is is extracted and bounded between -15 and 15.
 """
 DEPTH = 30
@@ -86,7 +86,7 @@ class EvaluationDataset():
                     board = game.board()
                     for move in game.mainline_moves():
                         board.push(move)
-                        eval = self.stock_fish_eval(board, DEPTH)
+                        eval = stock_fish_eval(board, DEPTH)
                         binary = split_bitboard(board)
 
                         print("Inserting into database: ", game_id, len(binary), eval)
@@ -107,22 +107,6 @@ class EvaluationDataset():
             print("Error inserting into database: {}".format(e))
             traceback.print_exc()
     
-
-    # Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
-    def stock_fish_eval(self, board, depth):
-        with chess.engine.SimpleEngine.popen_uci("./stockfish-win/stockfish-windows-x86-64-avx2.exe") as sf:
-            result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
-            
-            if result.white().is_mate():
-                if result.white().mate() > 0:
-                    return 1 # White wins
-                else:
-                    return 0 # Black wins
-                
-            eval = result.white().score() / 100
-            normalized_eval = 1 / (1 + math.exp(-eval))
-            return normalized_eval
-        
         
     def delete(self):
         try:
@@ -144,7 +128,21 @@ class EvaluationDataset():
 
     # ==========================================================================
 
-
+# Evaluate the board using Stockfish: Positive score means white is winning, negative score means black is winning
+def stock_fish_eval(board, depth):
+    with chess.engine.SimpleEngine.popen_uci("./stockfish/stockfish-windows-x86-64-avx2.exe") as sf:
+        result = sf.analyse(board, chess.engine.Limit(depth=depth)).get("score")
+        
+        if result.white().is_mate():
+            if result.white().mate() > 0:
+                return 1 # White wins
+            else:
+                return 0 # Black wins
+            
+        eval = result.white().score() / 100
+        normalized_eval = 1 / (1 + math.exp(-eval))
+        return normalized_eval
+    
 squares_index = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
 
 def square_to_index(square):
