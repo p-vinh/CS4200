@@ -8,7 +8,7 @@ from multiprocessing import Pool
 import socket
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    ".\\checkpoints\\M3_batch_size-1024-layer_count-6.ckpt"
+    "../checkpoints/M3_batch_size-1024-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -140,11 +140,11 @@ def handle_game():
             nb_moves = len(list(board.legal_moves))
             
             if nb_moves > 30:
-                best_move = minimax_root_2(board, 4, 90)
+                best_move = minimax_root(board, 4, 90)
             elif nb_moves > 10 and nb_moves <= 30:
-                best_move = minimax_root_2(board, 5, 120)
+                best_move = minimax_root(board, 5, 120)
             else:
-                best_move = minimax_root_2(board, 7, 180)
+                best_move = minimax_root(board, 7, 180)
                 
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())
