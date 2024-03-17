@@ -1,5 +1,6 @@
 import numpy as np
 import chess
+import data_parser
 from model import EvaluationModel
 import torch
 import time
@@ -12,59 +13,12 @@ model_chess = EvaluationModel.load_from_checkpoint(
 
 transposition_table = {}
 
-squares_index = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-
-def square_to_index(square):
-    letter = chess.square_name(square)
-    return 8 - int(letter[1]), squares_index[letter[0]]
-    
-def split_bitboard(board):
-    # 1D array with 14 total, arrays of 64 bits
-    # 14 arrays:
-    # 6 arrays for white pieces
-    # 6 arrays for black pieces
-    # 2 arrays add attacks and valid moves so the network knows what is being attacked
-    # concatenate the turn, castling rights, and en passant square to the end of the array
-    # 903 total bits
-    bitboards = np.array([], dtype=np.uint8)
-    
-    for piece in chess.PIECE_TYPES:
-        bitboard = np.zeros(64, dtype=np.uint8)
-        for square in board.pieces(piece, chess.WHITE):
-            bitboard[square] = 1
-        bitboards = np.append(bitboards, bitboard)
-    for piece in chess.PIECE_TYPES:
-        bitboard = np.zeros(64, dtype=np.uint8)
-        for square in board.pieces(piece, chess.BLACK):
-            bitboard[square] = 1
-        bitboards = np.append(bitboards, bitboard)
-    
-    # Add attacks and valid moves
-    aux = board.turn
-    board.turn = chess.WHITE
-    bitboard = np.zeros(64, dtype=np.uint8)
-    for move in board.legal_moves:
-        i, j = square_to_index(move.to_square)
-        bitboard[i * 8 + j] = 1
-    bitboards = np.append(bitboards, bitboard)
-    
-    board.turn = chess.BLACK
-    bitboard = np.zeros(64, dtype=np.uint8)
-    for move in board.legal_moves:
-        i, j = square_to_index(move.to_square)
-        bitboard[i * 8 + j] = 1
-    bitboards = np.append(bitboards, bitboard)
-    board.turn = aux
-
-    bitboards = bitboards.reshape(14, 8, 8)
-    binary = np.frombuffer(bitboards, dtype=np.uint8)
-    return binary.tobytes()
 
 # Eval function from the model for the current position
 def minimax_eval(board):
     model_chess.eval()
 
-    board = split_bitboard(board)
+    board = data_parser.split_bitboard(board)
     binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
     binary = binary.reshape(14, 8, 8)
     board_tensor = torch.from_numpy(binary)
