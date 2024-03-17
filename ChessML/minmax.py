@@ -126,24 +126,3 @@ def minimax_root(board, depth, maximizing_player=True):
                 best_move = move
             
     return best_move
-
-def handle_game():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(("0.0.0.0", 8080))
-        s.listen()
-        conn, addr = s.accept()
-        with conn:
-            print('Connected by', addr)
-            state = conn.recv(1024).decode()
-            print('FEN Board', state)
-
-            board = chess.Board(state)
-
-            best_move = minimax_root(board, 5, True)
-            print('Move: ', best_move)
-            conn.sendall(best_move.uci().encode())
-            
-if __name__ == "__main__":
-    while True:
-        handle_game()

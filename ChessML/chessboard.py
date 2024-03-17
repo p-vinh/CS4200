@@ -1,7 +1,6 @@
 import chess
 import chess.pgn
 import pygame as pg
-import minmax
 import time
 import threading
 import socket
