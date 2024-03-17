@@ -57,7 +57,7 @@ class EvaluationModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x).squeeze(1)
-        loss = F.l1_loss(y_hat, y)
+        loss = F.l1_loss(y_hat, y.squeeze())
         print("loss", loss)
         self.log("train_loss", loss)
         return loss

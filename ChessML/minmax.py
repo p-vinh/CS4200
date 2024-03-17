@@ -6,9 +6,10 @@ import torch
 import time
 from multiprocessing import Pool
 import socket
+from io import BytesIO
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M3_batch_size-1024-layer_count-6.ckpt"
+    "./checkpoints/M4batch_size-1024-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -20,9 +21,9 @@ def minimax_eval(board):
     # result = data_parser.stock_fish_eval(board, 24)
 
     board = data_parser.split_bitboard(board)
-    binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
-    binary = binary.reshape(14, 8, 8)
-    board_tensor = torch.from_numpy(binary)
+    board = BytesIO(board)
+    binary = np.frombuffer(board.getvalue(), dtype=np.uint8)
+    board_tensor = torch.from_numpy(binary.copy()).to(torch.float32)
 
     with torch.no_grad():
         output = model_chess(board_tensor).item()

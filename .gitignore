@@ -6,3 +6,4 @@ ChessML/archive/data.csv
 /ChessML/lightning_logs/chessml
 ChessML/checkpoints/M3_batch_size-1024-layer_count-6.ckpt
 ChessML/checkpoints/V3batch_size-1024-layer_count-6.ckpt
+ChessML/checkpoints/M4batch_size-1024-layer_count-6.ckpt
