@@ -68,29 +68,15 @@ def drawPieces(board):
 
 def ai_move(board):
     global stop_threads
-    stop_thread = False
     move = None
-    nb_moves = len(list(board.legal_moves))
     
     def send_board_to_ec2():
-        nonlocal move
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("54.153.106.149", 12345))
-            s.sendall(board.encode())
+            s.connect(("54.176.34.4", 8080))
+            s.sendall(board.fen().encode())
             
             move = s.recv(1024).decode()
-    
-    def calculate_move():
-        nonlocal move
-        if stop_thread:
-            return
-        if nb_moves > 30:
-            move = minmax.minimax_root(board, 4, False)
-        elif nb_moves > 10 and nb_moves <= 30:
-            move = minmax.minimax_root(board, 3, False)
-        else:
-            move = minmax.minimax_root(board, 5, False)
-    
+            move = chess.Move.from_uci(move)
     move_calculation_thread = threading.Thread(target=send_board_to_ec2)
     move_calculation_thread.start()
         

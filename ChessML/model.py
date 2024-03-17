@@ -75,14 +75,6 @@ class EvaluationModel(pl.LightningModule):
 if __name__ == "__main__":
     configs = [
         {"layer_count": 6, "batch_size": 1024},
-        # {"layer_count": 4, "batch_size": 1024},
-        # {"layer_count": 5, "batch_size": 1024},
-        # {"layer_count": 6, "batch_size": 1024},
-        # {"layer_count": 7, "batch_size": 1024},
-        # {"layer_count": 4, "batch_size": 512},
-        # {"layer_count": 5, "batch_size": 512},
-        # {"layer_count": 6, "batch_size": 512},
-        # {"layer_count": 7, "batch_size": 512},
     ]
     for config in configs:
         version_name = (
