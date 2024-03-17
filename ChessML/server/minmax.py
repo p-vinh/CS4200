@@ -4,10 +4,10 @@ import data_parser
 from model import EvaluationModel
 import torch
 import socket
-from numba import njit, prange
+from io import BytesIO
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "../checkpoints/M3_batch_size-1024-layer_count-6.ckpt"
+    "../checkpoints/M4batch_size-1024-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -18,9 +18,9 @@ def minimax_eval(board):
     model_chess.eval()
 
     board = data_parser.split_bitboard(board)
-    binary = np.frombuffer(board, dtype=np.uint8).astype(np.float32)
-    binary = binary.reshape(14, 8, 8)
-    board_tensor = torch.from_numpy(binary)
+    board = BytesIO(board)
+    binary = np.frombuffer(board.getvalue(), dtype=np.uint8)
+    board_tensor = torch.from_numpy(binary.copy()).to(torch.float32)
 
     with torch.no_grad():
         output = model_chess(board_tensor).item()
@@ -37,7 +37,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
 
     if maximizing_player:
         max_eval = -9999
-        for move in prange(board.legal_moves):
+        for move in board.legal_moves:
             board.push(move)
             max_eval = max(
                 max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -50,7 +50,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return max_eval
     else:
         min_eval = 9999
-        for move in prange(board.legal_moves):
+        for move in board.legal_moves:
             board.push(move)
             min_eval = min(
                 min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -63,11 +63,12 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return min_eval
 
 
+
 def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
     
-    for move in prange(board.legal_moves):
+    for move in board.legal_moves:
         future_board = chess.Board(board.fen())
         future_board.push(move)
         result = minimax(
@@ -98,13 +99,13 @@ def handle_game():
             board = chess.Board(state)
             
             nb_moves = len(list(board.legal_moves))
-            best_move = minimax_root(board, 1)
-            # if nb_moves > 30:
-            #     best_move = minimax_root(board, 4, 90)
-            # elif nb_moves > 10 and nb_moves <= 30:
-            #     best_move = minimax_root(board, 5, 120)
-            # else:
-            #     best_move = minimax_root(board, 7, 180)
+            # best_move = minimax_root(board, 1)
+            if nb_moves > 30:
+                best_move = minimax_root(board, 4)
+            elif nb_moves > 10 and nb_moves <= 30:
+                best_move = minimax_root(board, 5)
+            else:
+                best_move = minimax_root(board, 7)
                 
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())

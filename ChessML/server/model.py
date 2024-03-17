@@ -14,7 +14,7 @@ global model
 
 class EvaluationModel(pl.LightningModule):
     def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=6):
-        super(EvaluationModel, self).__init__()
+        super().__init__()
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         layers = []
@@ -57,7 +57,7 @@ class EvaluationModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x).squeeze(1)
-        loss = F.l1_loss(y_hat, y)
+        loss = F.l1_loss(y_hat, y.squeeze())
         print("loss", loss)
         self.log("train_loss", loss)
         return loss

@@ -45,11 +45,11 @@ class EvaluationDataset():
             # convert binary to numpy array
             binary = BytesIO(result[0])
             binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
-            binary = binary.reshape(14, 8, 8)
-
-            binary = torch.from_numpy(binary).to(torch.float16)
+            binary = torch.from_numpy(binary.copy()).to(numpy.float32)
             
-            return binary, result[1]
+            # convert eval to float
+            eval = numpy.array([result[1]], dtype=numpy.single)            
+            return binary, eval
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
