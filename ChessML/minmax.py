@@ -8,7 +8,7 @@ from multiprocessing import Pool
 import socket
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    ".\\checkpoints\\M3_batch_size-1024-layer_count-6.ckpt"
+    "./checkpoints/M3_batch_size-1024-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -129,15 +129,20 @@ def minimax_root(board, depth, maximizing_player=True):
 
 def handle_game():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("0.0.0.0", 1234))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("0.0.0.0", 8080))
         s.listen()
         conn, addr = s.accept()
         with conn:
             print('Connected by', addr)
             state = conn.recv(1024).decode()
-            best_move = minimax_root(state, 4, True)
-            
-            conn.sendall(best_move.encode())
+            print('FEN Board', state)
+
+            board = chess.Board(state)
+
+            best_move = minimax_root(board, 5, True)
+            print('Move: ', best_move)
+            conn.sendall(best_move.uci().encode())
             
 if __name__ == "__main__":
     while True:
