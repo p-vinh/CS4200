@@ -70,6 +70,8 @@ def ai_move(board):
     move = None
     
     def send_board_to_ec2():
+        nonlocal move
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(("54.176.34.4", 8080))
             s.sendall(board.fen().encode())

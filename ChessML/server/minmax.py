@@ -3,9 +3,8 @@ import chess
 import data_parser
 from model import EvaluationModel
 import torch
-import time
-from multiprocessing import Pool
 import socket
+from numba import njit, prange
 
 model_chess = EvaluationModel.load_from_checkpoint(
     "../checkpoints/M3_batch_size-1024-layer_count-6.ckpt"
@@ -38,7 +37,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
 
     if maximizing_player:
         max_eval = -9999
-        for move in board.legal_moves:
+        for move in prange(board.legal_moves):
             board.push(move)
             max_eval = max(
                 max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -51,7 +50,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return max_eval
     else:
         min_eval = 9999
-        for move in board.legal_moves:
+        for move in prange(board.legal_moves):
             board.push(move)
             min_eval = min(
                 min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -63,51 +62,12 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         transposition_table[board_hash] = min_eval
         return min_eval
 
-def evaluate_move(args):
-    move, future_board, depth, maximizing_player = args
-    result = minimax(
-        chess.Board(future_board.fen()),
-        depth - 1,
-        -9999,
-        9999,
-        not maximizing_player,
-    )
-    return move, result
-
-def minimax_root_2(board, depth, time_limit, maximizing_player=True):
-    best_move = None
-    best_value = -9999 if maximizing_player else 9999
-
-    start_time = time.time()
-
-    with Pool() as pool:
-        args = []
-        for move in board.legal_moves:
-            future_board = chess.Board(board.fen())
-            future_board.push(move)
-            args.append((move, future_board, depth, maximizing_player))
-
-        for move, result in pool.imap_unordered(evaluate_move, args):
-            if time.time() - start_time > time_limit:
-                print(f"Depth: {depth} Best move: {best_move} Value: {best_value}")
-                break
-
-            if result is not None:
-                if maximizing_player and result >= best_value:
-                    best_value = result
-                    best_move = move
-                elif not maximizing_player and result <= best_value:
-                    best_value = result
-                    best_move = move
-
-    return best_move
-
 
 def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
     
-    for move in board.legal_moves:
+    for move in prange(board.legal_moves):
         future_board = chess.Board(board.fen())
         future_board.push(move)
         result = minimax(
@@ -138,13 +98,13 @@ def handle_game():
             board = chess.Board(state)
             
             nb_moves = len(list(board.legal_moves))
-            
-            if nb_moves > 30:
-                best_move = minimax_root(board, 4, 90)
-            elif nb_moves > 10 and nb_moves <= 30:
-                best_move = minimax_root(board, 5, 120)
-            else:
-                best_move = minimax_root(board, 7, 180)
+            best_move = minimax_root(board, 1)
+            # if nb_moves > 30:
+            #     best_move = minimax_root(board, 4, 90)
+            # elif nb_moves > 10 and nb_moves <= 30:
+            #     best_move = minimax_root(board, 5, 120)
+            # else:
+            #     best_move = minimax_root(board, 7, 180)
                 
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())

@@ -45,11 +45,11 @@ class EvaluationDataset():
             # convert binary to numpy array
             binary = BytesIO(result[0])
             binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
-            binary = binary.reshape(14, 8, 8)
-
-            binary = torch.from_numpy(binary).to(torch.float16)
+            binary = torch.from_numpy(binary.copy()).to(numpy.float32)
             
-            return binary, result[1]
+            # convert eval to float
+            eval = numpy.array([result[1]], dtype=numpy.single)            
+            return binary, eval
         except Exception as e:
             print("Database connection failed due to {}".format(e))
             raise
@@ -206,33 +206,35 @@ def split_bitboard(board):
 
 
 
-
 def test():
-    try:
-        conn = pymysql.connect(
-            host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
-            user="admin",
-            password="chessengine",
-            db="chessai",
-        )
+    # try:
+    #     conn = pymysql.connect(
+    #         host="chessai.ci79l2mawwys.us-west-1.rds.amazonaws.com",
+    #         user="admin",
+    #         password="chessengine",
+    #         db="chessai",
+    #     )
 
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM ChessData")
-        count = cur.fetchone()[0]
-        print(f"Number of rows in ChessData: {count}")
+    #     cur = conn.cursor()
+    #     cur.execute("SELECT COUNT(*) FROM ChessData")
+    #     count = cur.fetchone()[0]
+    #     print(f"Number of rows in ChessData: {count}")
 
-        cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
-        rows = cur.fetchall()
+    #     cur.execute("SELECT * FROM ChessData ORDER BY RAND() LIMIT 5")
+    #     rows = cur.fetchall()
 
-        return rows
+    #     return rows
             
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    # db = EvaluationDataset()
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    db = EvaluationDataset()
     # db.delete()
     # db.import_game('./Dataset/lichess_elite_2021-12.pgn')
     # board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/3b4/1Pp2PPP/P1Q5/2B2KnR w kq - 0 17")
     # print(stock_fish_eval(board, 16))
+    bin, eval = db.__getitem__(4)
+
+    print(bin, eval)
 
 
 if __name__ == "__main__":
