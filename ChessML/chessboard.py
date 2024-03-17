@@ -4,6 +4,7 @@ import pygame as pg
 import minmax
 import time
 import threading
+import socket
 
 
 WIDTH = HEIGHT = 400
@@ -25,18 +26,18 @@ dark_square = (209, 139, 71)
 
 # Images
 images = {
-    "P": pg.image.load("./ChessML/pieces/wpawn.png"),
-    "N": pg.image.load("./ChessML/pieces/wknight.png"),
-    "B": pg.image.load("./ChessML/pieces/wbishop.png"),
-    "R": pg.image.load("./ChessML/pieces/wrook.png"),
-    "Q": pg.image.load("./ChessML/pieces/wqueen.png"),
-    "K": pg.image.load("./ChessML/pieces/wking.png"),
-    "p": pg.image.load("./ChessML/pieces/bpawn.png"),
-    "n": pg.image.load("./ChessML/pieces/bknight.png"),
-    "b": pg.image.load("./ChessML/pieces/bbishop.png"),
-    "r": pg.image.load("./ChessML/pieces/brook.png"),
-    "q": pg.image.load("./ChessML/pieces/bqueen.png"),
-    "k": pg.image.load("./ChessML/pieces/bking.png"),
+    "P": pg.image.load("./pieces/wpawn.png"),
+    "N": pg.image.load("./pieces/wknight.png"),
+    "B": pg.image.load("./pieces/wbishop.png"),
+    "R": pg.image.load("./pieces/wrook.png"),
+    "Q": pg.image.load("./pieces/wqueen.png"),
+    "K": pg.image.load("./pieces/wking.png"),
+    "p": pg.image.load("./pieces/bpawn.png"),
+    "n": pg.image.load("./pieces/bknight.png"),
+    "b": pg.image.load("./pieces/bbishop.png"),
+    "r": pg.image.load("./pieces/brook.png"),
+    "q": pg.image.load("./pieces/bqueen.png"),
+    "k": pg.image.load("./pieces/bking.png"),
 }
 
 
@@ -71,17 +72,26 @@ def ai_move(board):
     move = None
     nb_moves = len(list(board.legal_moves))
     
+    def send_board_to_ec2():
+        nonlocal move
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(("54.153.106.149", 12345))
+            s.sendall(board.encode())
+            
+            move = s.recv(1024).decode()
+    
     def calculate_move():
         nonlocal move
         if stop_thread:
             return
         if nb_moves > 30:
-            move = minmax.minimax_root(board, 4)
+            move = minmax.minimax_root(board, 4, False)
         elif nb_moves > 10 and nb_moves <= 30:
-            move = minmax.minimax_root(board, 5)
+            move = minmax.minimax_root(board, 3, False)
         else:
-            move = minmax.minimax_root(board, 7)
-    move_calculation_thread = threading.Thread(target=calculate_move)
+            move = minmax.minimax_root(board, 5, False)
+    
+    move_calculation_thread = threading.Thread(target=send_board_to_ec2)
     move_calculation_thread.start()
         
     while move_calculation_thread.is_alive():
