@@ -5,7 +5,7 @@ from model import EvaluationModel
 import torch
 import socket
 from io import BytesIO
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
 
 model_chess = EvaluationModel.load_from_checkpoint(
     "../checkpoints/M4batch_size-1024-layer_count-6.ckpt"
@@ -29,7 +29,7 @@ def minimax_eval(board):
 
 def minimax(board, depth, alpha, beta, maximizing_player, move):
     board.push(move)
-    
+        
     if depth == 0 or board.is_game_over():
         return minimax_eval(board)
 
@@ -46,7 +46,7 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
         for move in ordered_moves:
             board.push(move)
             max_eval = max(
-                max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
+                max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player, move)
             )
             board.pop()
             alpha = max(alpha, max_eval)
@@ -59,7 +59,7 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
         for move in ordered_moves:
             board.push(move)
             min_eval = min(
-                min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
+                min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player, move)
             )
             board.pop()
             beta = min(beta, min_eval)
@@ -72,7 +72,7 @@ def move_ordering(board, moves):
     piece_values = {'P' : 1, 'N' : 3, 'B' : 3, 'R' : 5, 'Q' : 9, 'K' : 0,}
     moves.sort(key=lambda move: piece_values[str(board.piece_at(move.from_square)).upper()], reverse=True)
     return moves
-
+    
 def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
@@ -80,10 +80,11 @@ def minimax_root(board, depth, maximizing_player=True):
     moves = list(board.legal_moves)
     ordered_moves = move_ordering(board, moves)
     
-    with Pool() as pool:
-        args = [(chess.Board(board.fen()), depth - 1, -9999, 9999, not maximizing_player, move) for move in ordered_moves]
-        results = pool.starmap(minimax, args)
-        
+    with ProcessPoolExecutor() as executor:
+        futures = [executor.submit(minimax, chess.Board(board.fen()), depth - 1, -9999, 9999, not maximizing_player, move) for move in ordered_moves]
+    
+    results = [f.result() for f in futures]
+    
     for move, result in zip(ordered_moves, results):
         if result is not None:
             if maximizing_player and result >= best_value:

@@ -82,6 +82,7 @@ def ai_move(board):
             s.sendall(board.fen().encode())
             
             move = s.recv(1024).decode()
+            print(move)
             move = chess.Move.from_uci(move)
     move_calculation_thread = threading.Thread(target=send_board_to_ec2)
     move_calculation_thread.start()
