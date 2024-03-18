@@ -8,7 +8,7 @@ from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "../checkpoints/M4batch_size-1024-layer_count-6.ckpt"
+    "../checkpoints/MBDbatch_size-512-layer_count-6.ckpt"
 )
 
 transposition_table = {}
