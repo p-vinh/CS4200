@@ -97,7 +97,6 @@ def ai_move(board):
         clock.tick(60)
     if move is not None:
         board.push(move)
-        print(move)
         
     print("Time taken: ", time.time() - start)
     drawBoard()

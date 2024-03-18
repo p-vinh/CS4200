@@ -36,12 +36,9 @@ def minimax(board, depth, alpha, beta, maximizing_player):
     if board_hash in transposition_table:
         return transposition_table[board_hash]
     
-    moves = list(board.legal_moves)
-    ordered_moves = move_ordering(board, moves)
-
     if maximizing_player:
         max_eval = -9999
-        for move in ordered_moves:
+        for move in board.legal_moves:
             board.push(move)
             max_eval = max(
                 max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -54,7 +51,7 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return max_eval
     else:
         min_eval = 9999
-        for move in ordered_moves:
+        for move in board.legal_moves:
             board.push(move)
             min_eval = min(
                 min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
@@ -66,43 +63,30 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         transposition_table[board_hash] = min_eval
         return min_eval
 
-def move_ordering(board, moves):
-    piece_values = {'P' : 1, 'N' : 3, 'B' : 3, 'R' : 5, 'Q' : 9, 'K' : 0,}
 
-    def move_value(move):
-        from_piece = str(board.piece_at(move.from_square)).upper()
-        to_piece = str(board.piece_at(move.to_square)).upper() if board.is_capture(move) else None
-        return piece_values[from_piece] + (piece_values[to_piece] if to_piece else 0)
-    
-    moves.sort(key=move_value, reverse=True)
-    
-    return moves
-    
 def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
     
-    moves = list(board.legal_moves)
-    ordered_moves = move_ordering(board, moves)
-    
     with ThreadPoolExecutor() as executor:
         futures = []
-        for move in ordered_moves:
+        for move in board.legal_moves:
             new_board = chess.Board(board.fen())
             new_board.push(move)
             futures.append(executor.submit(minimax, new_board, depth - 1, -9999, 9999, not maximizing_player))
     
     results = [f.result() for f in futures]
     
-    for move, result in zip(ordered_moves, results):
-        if result is not None:
-            if maximizing_player and result >= best_value:
-                best_value = result
+    for move, value in zip(board.legal_moves, results):
+        if maximizing_player:
+            if value >= best_value:
+                best_value = value
                 best_move = move
-            elif not maximizing_player and result <= best_value:
-                best_value = result
+        else:
+            if value <= best_value:
+                best_value = value
                 best_move = move
-            
+        
     return best_move
 
 def handle_game():
@@ -119,7 +103,6 @@ def handle_game():
             board = chess.Board(state)
             
             nb_moves = len(list(board.legal_moves))
-            # best_move = minimax_root(board, 1)
             if nb_moves > 30:
                 best_move = minimax_root(board, 4, False)
             elif nb_moves > 10 and nb_moves <= 30:
