@@ -84,19 +84,18 @@ if __name__ == "__main__":
     ]
     for config in configs:
         version_name = (
-            f'M5batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+            f'M6batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         )
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10)
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=100)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
             layer_count=config["layer_count"],
         )
-        trainer.tune(model)
-        lr_finder = trainer.tuner.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
+#        lr_finder = trainer.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
