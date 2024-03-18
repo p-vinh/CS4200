@@ -44,11 +44,11 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
     if maximizing_player:
         max_eval = -9999
         for move in ordered_moves:
-            board.push(move)
+            new_board = board.copy()
+            new_board.push(move)
             max_eval = max(
-                max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player, move)
+                max_eval, minimax(new_board, depth - 1, alpha, beta, not maximizing_player, move)
             )
-            board.pop()
             alpha = max(alpha, max_eval)
             if beta <= alpha:
                 return max_eval
@@ -57,11 +57,11 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
     else:
         min_eval = 9999
         for move in ordered_moves:
-            board.push(move)
+            new_board = board.copy()
+            new_board.push(move)
             min_eval = min(
-                min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player, move)
+                min_eval, minimax(new_board, depth - 1, alpha, beta, not maximizing_player, move)
             )
-            board.pop()
             beta = min(beta, min_eval)
             if beta <= alpha:
                 return min_eval
