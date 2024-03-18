@@ -101,7 +101,7 @@ if __name__ == "__main__":
             verbose=False,
             mode="min",
         )
-        trainer = pl.Trainer(callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=10)
+        trainer = pl.Trainer(callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=100)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
