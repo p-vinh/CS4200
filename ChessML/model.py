@@ -16,36 +16,7 @@ class EvaluationModel(pl.LightningModule):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         layers = []
-        
-        # Model V1
-        # layers.append(("linear-0", nn.Linear(896, 896)))
-        # layers.append(("relu-0", nn.ReLU()))
-        # layers.append(("linear-1", nn.Linear(896, 448)))
-        # layers.append(("relu-1", nn.ReLU()))
-        # layers.append(("linear-2", nn.Linear(448, 224)))
-        # layers.append(("relu-2", nn.ReLU()))
-        # layers.append(("linear-3", nn.Linear(224, 112)))
-        # layers.append(("relu-3", nn.ReLU()))
-        # layers.append(("linear-4", nn.Linear(112, 1)))
-        
-        # Model V2
-        # for every layer decrease the size by half, keep track of previous size
-        # layers.append(("linear-0", nn.Linear(896, 2048)))
-        # layers.append(("relu-0", nn.ReLU()))
-        # layers.append(("dropout-0", nn.Dropout(0.5)))
-        # layers.append(("linear-1", nn.Linear(2048, 2048)))
-        # layers.append(("relu-1", nn.ReLU()))
-        # layers.append(("dropout-1", nn.Dropout(0.5)))
-        # layers.append(("linear-2", nn.Linear(2048, 896)))
-        # layers.append(("relu-2", nn.ReLU()))
-        # layers.append(("dropout-2", nn.Dropout(0.5)))
-        # prev_size = 896
-        # for i in range(3, layer_count):
-        #     layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
-        #     layers.append((f"relu-{i}", nn.ReLU()))
-        #     prev_size = prev_size // 2
-        # layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
-
+                
         # Model V3
         # layers.append(("linear-0", nn.Linear(896, 2048)))
         # layers.append(("relu-0", nn.ReLU()))
@@ -56,17 +27,30 @@ class EvaluationModel(pl.LightningModule):
         # layers.append(("linear-6", nn.Linear(2048, 1)))
         
         # Model V3 with dropout and batch normalization
-        layers.append(("linear-0", nn.Linear(896, 2048)))
-        layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
-        layers.append(("relu-0", nn.ReLU()))
+        # layers.append(("linear-0", nn.Linear(896, 2048)))
+        # layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
+        # layers.append(("relu-0", nn.ReLU()))
+        # layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
+        # for i in range(1, 6):
+        #     layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
+        #     layers.append((f"batchnorm-{i}", nn.BatchNorm1d(2048)))  # Add batch normalization
+        #     layers.append((f"relu-{i}", nn.ReLU()))
+        #     layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
+
+        # layers.append(("linear-6", nn.Linear(2048, 1)))
+        
+        # Model V4 with leaky relu and more layers
+        layers.append(("linear-0", nn.Linear(896, 4096)))
+        layers.append(("batchnorm-0", nn.BatchNorm1d(4096)))  # Add batch normalization
+        layers.append(("leakyrelu-0", nn.LeakyReLU()))
         layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
-        for i in range(1, 6):
-            layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
-            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(2048)))  # Add batch normalization
-            layers.append((f"relu-{i}", nn.ReLU()))
+        for i in range(1, 8):
+            layers.append((f"linear-{i}", nn.Linear(4096, 4096)))
+            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(4096)))  # Add batch normalization
+            layers.append((f"leakyrelu-{i}", nn.LeakyReLU()))
             layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
-        layers.append(("linear-6", nn.Linear(2048, 1)))
+        layers.append(("linear-8", nn.Linear(4096, 1)))
         
         self.seq = nn.Sequential(OrderedDict(layers))
         
