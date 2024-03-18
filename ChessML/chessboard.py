@@ -16,7 +16,6 @@ screen = pg.display.set_mode((WIDTH, HEIGHT))
 font = pg.font.Font(None, 24)
 clock = pg.time.Clock()
 board = chess.Board()
-drawText()
 
 # Colors
 white = (255, 255, 255)
@@ -53,7 +52,8 @@ def drawText():
             if col == 0:
                 text = font.render(numbers[row], True, black)
                 screen.blit(text, (col * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2))
-            
+drawText()
+          
 def drawBoard():
     for row in range(8):
         for col in range(8):
