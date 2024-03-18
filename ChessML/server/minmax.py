@@ -86,7 +86,8 @@ def minimax_root(board, depth, maximizing_player=True):
             if value <= best_value:
                 best_value = value
                 best_move = move
-        
+    print("Value: ", best_value)
+    print("Maximizing Player: ", maximizing_player)
     return best_move
 
 def handle_game():
@@ -109,7 +110,7 @@ def handle_game():
                 best_move = minimax_root(board, 3, False)
             else:
                 best_move = minimax_root(board, 5, False)
-                
+            print(board)
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())
             
