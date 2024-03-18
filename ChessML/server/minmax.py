@@ -70,7 +70,14 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
 
 def move_ordering(board, moves):
     piece_values = {'P' : 1, 'N' : 3, 'B' : 3, 'R' : 5, 'Q' : 9, 'K' : 0,}
-    moves.sort(key=lambda move: piece_values[str(board.piece_at(move.from_square)).upper()], reverse=True)
+
+    def move_value(move):
+        from_piece = str(board.piece_at(move.from_square)).upper()
+        to_piece = str(board.piece_at(move.to_square)).upper() if board.is_capture(move) else None
+        return piece_values[from_piece] + (piece_values[to_piece] if to_piece else 0)
+    
+    moves.sort(key=move_value, reverse=True)
+    
     return moves
     
 def minimax_root(board, depth, maximizing_player=True):
