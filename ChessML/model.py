@@ -41,7 +41,7 @@ class EvaluationModel(pl.LightningModule):
         layers.append(("relu-2", nn.ReLU()))
         layers.append(("dropout-2", nn.Dropout(0.5)))
         prev_size = 896
-        for i in range(3, layer_count + 1):
+        for i in range(3, layer_count):
             layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
             layers.append((f"relu-{i}", nn.ReLU()))
             prev_size = prev_size // 2
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     ]
     for config in configs:
         version_name = (
-            f'MBDbatch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+            f'M5batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         )
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
