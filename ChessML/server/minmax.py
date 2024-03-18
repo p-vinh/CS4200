@@ -103,7 +103,7 @@ def handle_game():
             board = chess.Board(state)
             
             nb_moves = len(list(board.legal_moves))
-            if nb_moves > 30:
+            if nb_moves > 35:
                 best_move = minimax_root(board, 4, False)
             elif nb_moves > 10 and nb_moves <= 30:
                 best_move = minimax_root(board, 3, False)
