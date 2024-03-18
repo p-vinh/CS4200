@@ -11,7 +11,7 @@ from io import BytesIO
 # If socket doesn't work, use this
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M6batch_size-512-layer_count-6.ckpt"
+    "./checkpoints/M6batch_size-256-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -22,13 +22,15 @@ def minimax_eval(board):
     model_chess.eval()
     # result = data_parser.stock_fish_eval(board, 24)
 
-    board = data_parser.split_bitboard(board)
-    board = BytesIO(board)
-    binary = np.frombuffer(board.getvalue(), dtype=np.uint8)
+    byte_board = data_parser.split_bitboard(board)
+    byte_board = BytesIO(byte_board)
+    binary = np.frombuffer(byte_board.getvalue(), dtype=np.uint8)
     board_tensor = torch.from_numpy(binary.copy()).to(torch.float32)
 
     with torch.no_grad():
         output = model_chess(board_tensor).item()
+        if board.is_checkmate():
+            output += -1 if board.turn else 1
         # loss = abs(output - result)
         # print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
         return output

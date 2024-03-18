@@ -117,7 +117,14 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-
+            if board.is_checkmate():
+                print(
+                    "Checkmate. {} wins".format(
+                        "White" if board.turn == chess.BLACK else "Black"
+                    )
+                )
+                running = False
+                return
             if board.turn == chess.WHITE:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     location = pg.mouse.get_pos()
@@ -167,14 +174,6 @@ def main():
                     
             else:
                 print("AI's turn")
-                if (board.is_checkmate()):
-                    print(
-                        "Checkmate. {} wins".format(
-                            "White" if board.turn == chess.BLACK else "Black"
-                        )
-                    )
-                    running = False
-                    return
                 if (ai_move(board)):
                     running = False
                     return
