@@ -41,11 +41,15 @@ class EvaluationModel(pl.LightningModule):
         # layers.append(("linear-6", nn.Linear(2048, 1)))
 
         # Model V4 with leaky relu and more layers
-        layers.append(("linear-0", nn.Linear(896, 4096)))
-        layers.append(("batchnorm-0", nn.BatchNorm1d(4096)))  # Add batch normalization
+        layers.append(("linear-0", nn.Linear(896, 2048)))
+        layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
         layers.append(("leakyrelu-0", nn.LeakyReLU()))
         layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
-        for i in range(1, 8):
+        layers.append(("linear-1", nn.Linear(2048, 4096)))
+        layers.append(("batchnorm-1", nn.BatchNorm1d(4096)))  # Add batch normalization
+        layers.append(("leakyrelu-1", nn.LeakyReLU()))
+        layers.append(("dropout-1", nn.Dropout(0.5)))  # Add dropout
+        for i in range(2, 4):
             layers.append((f"linear-{i}", nn.Linear(4096, 4096)))
             layers.append(
                 (f"batchnorm-{i}", nn.BatchNorm1d(4096))
@@ -53,7 +57,7 @@ class EvaluationModel(pl.LightningModule):
             layers.append((f"leakyrelu-{i}", nn.LeakyReLU()))
             layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
-        layers.append(("linear-8", nn.Linear(4096, 1)))
+        layers.append(("linear-4", nn.Linear(4096, 1)))
 
         self.seq = nn.Sequential(OrderedDict(layers))
 
@@ -96,12 +100,14 @@ if __name__ == "__main__":
         )
         early_stop_callback = EarlyStopping(
             monitor="train_loss",
-            min_delta=0.00, 
+            min_delta=0.00,
             patience=10,
             verbose=False,
             mode="min",
         )
-        trainer = pl.Trainer(callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=100)
+        trainer = pl.Trainer(
+            callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=100
+        )
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
