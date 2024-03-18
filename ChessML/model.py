@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping
 from collections import OrderedDict
 import data_parser
 
@@ -16,7 +17,7 @@ class EvaluationModel(pl.LightningModule):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         layers = []
-                
+
         # Model V3
         # layers.append(("linear-0", nn.Linear(896, 2048)))
         # layers.append(("relu-0", nn.ReLU()))
@@ -25,7 +26,7 @@ class EvaluationModel(pl.LightningModule):
         #     layers.append((f"relu-{i}", nn.ReLU()))
 
         # layers.append(("linear-6", nn.Linear(2048, 1)))
-        
+
         # Model V3 with dropout and batch normalization
         # layers.append(("linear-0", nn.Linear(896, 2048)))
         # layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
@@ -38,7 +39,7 @@ class EvaluationModel(pl.LightningModule):
         #     layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
         # layers.append(("linear-6", nn.Linear(2048, 1)))
-        
+
         # Model V4 with leaky relu and more layers
         layers.append(("linear-0", nn.Linear(896, 4096)))
         layers.append(("batchnorm-0", nn.BatchNorm1d(4096)))  # Add batch normalization
@@ -46,14 +47,16 @@ class EvaluationModel(pl.LightningModule):
         layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
         for i in range(1, 8):
             layers.append((f"linear-{i}", nn.Linear(4096, 4096)))
-            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(4096)))  # Add batch normalization
+            layers.append(
+                (f"batchnorm-{i}", nn.BatchNorm1d(4096))
+            )  # Add batch normalization
             layers.append((f"leakyrelu-{i}", nn.LeakyReLU()))
             layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
         layers.append(("linear-8", nn.Linear(4096, 1)))
-        
+
         self.seq = nn.Sequential(OrderedDict(layers))
-        
+
     def forward(self, x):
         x = x.view(-1, 896)
         return self.seq(x)
@@ -67,7 +70,9 @@ class EvaluationModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=1e-5)
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=self.learning_rate, weight_decay=1e-5
+        )
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
         return [optimizer], [scheduler]
 
@@ -89,13 +94,20 @@ if __name__ == "__main__":
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=100)
+        early_stop_callback = EarlyStopping(
+            monitor="train_loss",
+            min_delta=0.00, 
+            patience=10,
+            verbose=False,
+            mode="min",
+        )
+        trainer = pl.Trainer(callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=10)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
             layer_count=config["layer_count"],
         )
-#        lr_finder = trainer.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
+
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
