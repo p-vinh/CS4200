@@ -6,8 +6,6 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from collections import OrderedDict
 import data_parser
-import numpy as np
-import chess
 
 global model
 
@@ -40,16 +38,29 @@ class EvaluationModel(pl.LightningModule):
         # layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
 
         # Model V3
+        # layers.append(("linear-0", nn.Linear(896, 2048)))
+        # layers.append(("relu-0", nn.ReLU()))
+        # for i in range(1, 6):
+        #     layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
+        #     layers.append((f"relu-{i}", nn.ReLU()))
+
+        # layers.append(("linear-6", nn.Linear(2048, 1)))
+        
+        # Model V3 with dropout and batch normalization
         layers.append(("linear-0", nn.Linear(896, 2048)))
+        layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
         layers.append(("relu-0", nn.ReLU()))
+        layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
         for i in range(1, 6):
             layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
+            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(2048)))  # Add batch normalization
             layers.append((f"relu-{i}", nn.ReLU()))
+            layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
         layers.append(("linear-6", nn.Linear(2048, 1)))
         
         self.seq = nn.Sequential(OrderedDict(layers))
-
+        
     def forward(self, x):
         x = x.view(-1, 896)
         return self.seq(x)
@@ -63,7 +74,9 @@ class EvaluationModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=1e-5)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        return [optimizer], [scheduler]
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
@@ -78,7 +91,7 @@ if __name__ == "__main__":
     ]
     for config in configs:
         version_name = (
-            f'V3batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+            f'MBDbatch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         )
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
@@ -89,10 +102,8 @@ if __name__ == "__main__":
             learning_rate=1e-3,
             layer_count=config["layer_count"],
         )
-        # trainer.tune(model)
-        # lr_finder = trainer.tuner.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
-        # fig = lr_finder.plot(suggest=True)
-        # fig.show()
+        trainer.tune(model)
+        lr_finder = trainer.tuner.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
