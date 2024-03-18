@@ -4,8 +4,8 @@ import data_parser
 from model import EvaluationModel
 import torch
 import time
-from multiprocessing import Pool
 import socket
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 
 # If socket doesn't work, use this
@@ -93,7 +93,7 @@ def minimax_root(board, depth, maximizing_player=True):
                 best_value = value
                 best_move = move
     print("Value: ", best_value)
-    print("Maximizing Player: ", maximizing_player)
+    print("FEN: ", board.fen())
     return best_move
 
             
