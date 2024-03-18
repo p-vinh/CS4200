@@ -4,6 +4,7 @@ import pygame as pg
 import time
 import threading
 import socket
+import minmax
 
 
 WIDTH = HEIGHT = 400
@@ -68,6 +69,10 @@ def drawPieces(board):
 def ai_move(board):
     global stop_threads
     move = None
+    
+    def calculate_move():
+        nonlocal move
+        move = minmax.minimax_root(board, 3)
     
     def send_board_to_ec2():
         nonlocal move

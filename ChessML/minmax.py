@@ -8,6 +8,8 @@ from multiprocessing import Pool
 import socket
 from io import BytesIO
 
+# If socket doesn't work, use this
+
 model_chess = EvaluationModel.load_from_checkpoint(
     "./checkpoints/M4batch_size-1024-layer_count-6.ckpt"
 )
