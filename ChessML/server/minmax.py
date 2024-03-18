@@ -5,7 +5,7 @@ from model import EvaluationModel
 import torch
 import socket
 from io import BytesIO
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 model_chess = EvaluationModel.load_from_checkpoint(
     "../checkpoints/MBDbatch_size-512-layer_count-6.ckpt"
@@ -68,7 +68,7 @@ def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
     
-    with ThreadPoolExecutor() as executor:
+    with ProcessPoolExecutor() as executor:
         futures = []
         for move in board.legal_moves:
             new_board = chess.Board(board.fen())
@@ -102,14 +102,8 @@ def handle_game():
             print('FEN Board', state)
 
             board = chess.Board(state)
-            
-            nb_moves = len(list(board.legal_moves))
-            if nb_moves > 35:
-                best_move = minimax_root(board, 4, False)
-            elif nb_moves > 10 and nb_moves <= 30:
-                best_move = minimax_root(board, 3, False)
-            else:
-                best_move = minimax_root(board, 5, False)
+
+            best_move = minimax_root(board, 3, False)
             print(board)
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())
