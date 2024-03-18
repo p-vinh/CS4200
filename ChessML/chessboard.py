@@ -4,7 +4,7 @@ import pygame as pg
 import time
 import threading
 import socket
-# import minmax
+import minmax
 
 
 WIDTH = HEIGHT = 400
@@ -70,21 +70,21 @@ def ai_move(board):
     global stop_threads
     move = None
     start = time.time()
-    # def calculate_move():
-    #     nonlocal move
-    #     move = minmax.minimax_root(board, 3)
-    
-    def send_board_to_ec2():
+    def calculate_move():
         nonlocal move
+        move = minmax.minimax_root(board, 3)
+    
+    # def send_board_to_ec2():
+    #     nonlocal move
 
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("54.176.34.4", 8080))
-            s.sendall(board.fen().encode())
+    #     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    #         s.connect(("54.176.34.4", 8080))
+    #         s.sendall(board.fen().encode())
             
-            move = s.recv(1024).decode()
-            print(move)
-            move = chess.Move.from_uci(move)
-    move_calculation_thread = threading.Thread(target=send_board_to_ec2)
+    #         move = s.recv(1024).decode()
+    #         print(move)
+    #         move = chess.Move.from_uci(move)
+    move_calculation_thread = threading.Thread(target=calculate_move)
     move_calculation_thread.start()
         
     while move_calculation_thread.is_alive():
