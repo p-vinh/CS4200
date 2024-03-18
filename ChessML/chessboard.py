@@ -40,19 +40,6 @@ images = {
     "k": pg.image.load("./pieces/bking.png"),
 }
 
-def drawText():
-    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-    numbers = ['8', '7', '6', '5', '4', '3', '2', '1']
-    
-    for row in range(8):
-        for col in range(8):
-            if row == 7:
-                text = font.render(letters[col], True, black)
-                screen.blit(text, (col * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2))
-            if col == 0:
-                text = font.render(numbers[row], True, black)
-                screen.blit(text, (col * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2))
-drawText()
           
 def drawBoard():
     for row in range(8):
@@ -119,7 +106,6 @@ def ai_move(board):
 
 def main():
     pg.display.set_caption("Chess")
-
     drawBoard()
     drawPieces(board)
     running = True
