@@ -5,7 +5,7 @@ from model import EvaluationModel
 import torch
 import socket
 from io import BytesIO
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 model_chess = EvaluationModel.load_from_checkpoint(
     "../checkpoints/M4batch_size-1024-layer_count-6.ckpt"
@@ -85,7 +85,7 @@ def minimax_root(board, depth, maximizing_player=True):
     moves = list(board.legal_moves)
     ordered_moves = move_ordering(board, moves)
     
-    with ProcessPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         futures = []
         for move in ordered_moves:
             new_board = chess.Board(board.fen())
