@@ -11,7 +11,7 @@ from io import BytesIO
 # If socket doesn't work, use this
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M4batch_size-1024-layer_count-6.ckpt"
+    "./checkpoints/MBDbatch_size-512-layer_count-6.ckpt"
 )
 
 transposition_table = {}
@@ -74,21 +74,26 @@ def minimax_root(board, depth, maximizing_player=True):
     best_move = None
     best_value = -9999 if maximizing_player else 9999
     
-    for move in board.legal_moves:
-        future_board = chess.Board(board.fen())
-        future_board.push(move)
-        result = minimax(
-            future_board, depth - 1, -9999, 9999, not maximizing_player
-        )
-        
-        if result is not None:
-            if maximizing_player and result >= best_value:
-                best_value = result
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for move in board.legal_moves:
+            new_board = chess.Board(board.fen())
+            new_board.push(move)
+            futures.append(executor.submit(minimax, new_board, depth - 1, -9999, 9999, not maximizing_player))
+    
+    results = [f.result() for f in futures]
+    
+    for move, value in zip(board.legal_moves, results):
+        if maximizing_player:
+            if value >= best_value:
+                best_value = value
                 best_move = move
-            elif not maximizing_player and result <= best_value:
-                best_value = result
+        else:
+            if value <= best_value:
+                best_value = value
                 best_move = move
-            
+    print("Value: ", best_value)
+    print("Maximizing Player: ", maximizing_player)
     return best_move
 
             

@@ -72,7 +72,7 @@ def ai_move(board):
     start = time.time()
     def calculate_move():
         nonlocal move
-        move = minmax.minimax_root(board, 3)
+        move = minmax.minimax_root(board, 3, False)
     
     # def send_board_to_ec2():
     #     nonlocal move

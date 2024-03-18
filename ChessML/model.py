@@ -4,7 +4,6 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping
 from collections import OrderedDict
 import data_parser
 
@@ -84,14 +83,14 @@ class EvaluationModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=1e-5)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
         return [optimizer], [scheduler]
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
         return DataLoader(
-            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True, shuffle=True
+            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True
         )
 
 
@@ -106,16 +105,14 @@ if __name__ == "__main__":
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=200)
-
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10)
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
             layer_count=config["layer_count"],
         )
-#        lr_finder = trainer.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
+        trainer.tune(model)
+        lr_finder = trainer.tuner.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
-        trainer.test(model)
