@@ -4,6 +4,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping
 from collections import OrderedDict
 import data_parser
 
@@ -87,7 +88,7 @@ class EvaluationModel(pl.LightningModule):
 
 if __name__ == "__main__":
     configs = [
-        {"layer_count": 6, "batch_size": 1024},
+        {"layer_count": 6, "batch_size": 512},
     ]
     for config in configs:
         version_name = (
@@ -96,14 +97,16 @@ if __name__ == "__main__":
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
         )
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=10)
+
+        early_stop = EarlyStopping(monitor='train_loss',min_delta=0.00,patience=3,verbose=False,mode='min')
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=200, callbacks=[early_stop])
+
         model = EvaluationModel(
             batch_size=config["batch_size"],
             learning_rate=1e-3,
             layer_count=config["layer_count"],
         )
-        trainer.tune(model)
-        lr_finder = trainer.tuner.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
+#        lr_finder = trainer.lr_find(model, min_lr=1e-6, max_lr=1e-3, num_training=25)
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")

@@ -45,7 +45,7 @@ class EvaluationDataset():
             # convert binary to numpy array
             binary = BytesIO(result[0])
             binary = numpy.frombuffer(binary.getvalue(), dtype=numpy.uint8)
-            binary = torch.from_numpy(binary.copy()).to(numpy.float32)
+            binary = torch.from_numpy(binary.copy()).to(torch.float32)
             
             # convert eval to float
             eval = numpy.array([result[1]], dtype=numpy.single)            
