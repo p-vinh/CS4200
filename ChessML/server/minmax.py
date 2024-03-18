@@ -27,9 +27,7 @@ def minimax_eval(board):
         output = model_chess(board_tensor).item()
         return output
 
-def minimax(board, depth, alpha, beta, maximizing_player, move):
-    board.push(move)
-        
+def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
         return minimax_eval(board)
 
@@ -44,11 +42,11 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
     if maximizing_player:
         max_eval = -9999
         for move in ordered_moves:
-            new_board = board.copy()
-            new_board.push(move)
+            board.push(move)
             max_eval = max(
-                max_eval, minimax(new_board, depth - 1, alpha, beta, not maximizing_player, move)
+                max_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
             )
+            board.pop()
             alpha = max(alpha, max_eval)
             if beta <= alpha:
                 return max_eval
@@ -57,11 +55,11 @@ def minimax(board, depth, alpha, beta, maximizing_player, move):
     else:
         min_eval = 9999
         for move in ordered_moves:
-            new_board = board.copy()
-            new_board.push(move)
+            board.push(move)
             min_eval = min(
-                min_eval, minimax(new_board, depth - 1, alpha, beta, not maximizing_player, move)
+                min_eval, minimax(board, depth - 1, alpha, beta, not maximizing_player)
             )
+            board.pop()
             beta = min(beta, min_eval)
             if beta <= alpha:
                 return min_eval
@@ -88,7 +86,11 @@ def minimax_root(board, depth, maximizing_player=True):
     ordered_moves = move_ordering(board, moves)
     
     with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(minimax, chess.Board(board.fen()), depth - 1, -9999, 9999, not maximizing_player, move) for move in ordered_moves]
+        futures = []
+        for move in ordered_moves:
+            new_board = chess.Board(board.fen())
+            new_board.push(move)
+            futures.append(executor.submit(minimax, new_board, depth - 1, -9999, 9999, not maximizing_player))
     
     results = [f.result() for f in futures]
     
