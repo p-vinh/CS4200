@@ -31,12 +31,21 @@ class EvaluationModel(pl.LightningModule):
         
         # Model V2
         # for every layer decrease the size by half, keep track of previous size
-        # prev_size = 896
-        # for i in range(1, layer_count):
-        #     layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
-        #     layers.append((f"relu-{i}", nn.ReLU()))
-        #     prev_size = prev_size // 2
-        # layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
+        layers.append(("linear-0", nn.Linear(896, 2048)))
+        layers.append(("relu-0", nn.ReLU()))
+        layers.append(("dropout-0", nn.Dropout(0.5)))
+        layers.append(("linear-1", nn.Linear(2048, 2048)))
+        layers.append(("relu-1", nn.ReLU()))
+        layers.append(("dropout-1", nn.Dropout(0.5)))
+        layers.append(("linear-2", nn.Linear(2048, 896)))
+        layers.append(("relu-2", nn.ReLU()))
+        layers.append(("dropout-2", nn.Dropout(0.5)))
+        prev_size = 896
+        for i in range(3, layer_count + 1):
+            layers.append((f"linear-{i}", nn.Linear(prev_size, prev_size // 2)))
+            layers.append((f"relu-{i}", nn.ReLU()))
+            prev_size = prev_size // 2
+        layers.append((f"linear-{layer_count}", nn.Linear(prev_size, 1)))
 
         # Model V3
         # layers.append(("linear-0", nn.Linear(896, 2048)))
@@ -48,17 +57,17 @@ class EvaluationModel(pl.LightningModule):
         # layers.append(("linear-6", nn.Linear(2048, 1)))
         
         # Model V3 with dropout and batch normalization
-        layers.append(("linear-0", nn.Linear(896, 2048)))
-        layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
-        layers.append(("relu-0", nn.ReLU()))
-        layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
-        for i in range(1, 6):
-            layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
-            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(2048)))  # Add batch normalization
-            layers.append((f"relu-{i}", nn.ReLU()))
-            layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
+        # layers.append(("linear-0", nn.Linear(896, 2048)))
+        # layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
+        # layers.append(("relu-0", nn.ReLU()))
+        # layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
+        # for i in range(1, 6):
+        #     layers.append((f"linear-{i}", nn.Linear(2048, 2048)))
+        #     layers.append((f"batchnorm-{i}", nn.BatchNorm1d(2048)))  # Add batch normalization
+        #     layers.append((f"relu-{i}", nn.ReLU()))
+        #     layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
 
-        layers.append(("linear-6", nn.Linear(2048, 1)))
+        # layers.append(("linear-6", nn.Linear(2048, 1)))
         
         self.seq = nn.Sequential(OrderedDict(layers))
         
@@ -75,20 +84,20 @@ class EvaluationModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=1e-5)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
         return [optimizer], [scheduler]
 
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
         return DataLoader(
-            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True
+            dataset, batch_size=self.batch_size, num_workers=0, pin_memory=True, shuffle=True
         )
 
 
 if __name__ == "__main__":
     configs = [
-        {"layer_count": 6, "batch_size": 512},
+        {"layer_count": 6, "batch_size": 1024},
     ]
     for config in configs:
         version_name = (
@@ -98,8 +107,7 @@ if __name__ == "__main__":
             "lightning_logs", name="chessml", version=version_name
         )
 
-        early_stop = EarlyStopping(monitor='train_loss',min_delta=0.00,patience=3,verbose=False,mode='min')
-        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=200, callbacks=[early_stop])
+        trainer = pl.Trainer(precision=16, logger=logger, max_epochs=200)
 
         model = EvaluationModel(
             batch_size=config["batch_size"],
@@ -110,3 +118,4 @@ if __name__ == "__main__":
         trainer.fit(model)
 
         trainer.save_checkpoint(f"checkpoints/{version_name}.ckpt")
+        trainer.test(model)

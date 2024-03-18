@@ -16,6 +16,7 @@ screen = pg.display.set_mode((WIDTH, HEIGHT))
 font = pg.font.Font(None, 24)
 clock = pg.time.Clock()
 board = chess.Board()
+drawText()
 
 # Colors
 white = (255, 255, 255)
@@ -40,7 +41,19 @@ images = {
     "k": pg.image.load("./pieces/bking.png"),
 }
 
-
+def drawText():
+    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    numbers = ['8', '7', '6', '5', '4', '3', '2', '1']
+    
+    for row in range(8):
+        for col in range(8):
+            if row == 7:
+                text = font.render(letters[col], True, black)
+                screen.blit(text, (col * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2))
+            if col == 0:
+                text = font.render(numbers[row], True, black)
+                screen.blit(text, (col * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2))
+            
 def drawBoard():
     for row in range(8):
         for col in range(8):
@@ -157,6 +170,15 @@ def main():
                         drawPieces(board)  # Update the pieces
                         sqSelected = ()
                         playerClicks = []
+                # with chess.engine.SimpleEngine.popen_uci("./stockfish/stockfish-windows-x86-64-avx2.exe") as sf:
+                #     result = sf.analyse(board, chess.engine.Limit(depth=3))
+                #     # Make best move
+                #     move = result.get("pv")[0]
+                #     board.push(move)
+                #     print(move)
+                #     drawBoard()
+                #     drawPieces(board)
+                    
             else:
                 print("AI's turn")
                 if (board.is_checkmate()):

@@ -186,20 +186,6 @@ def split_bitboard(board):
     bitboards = numpy.append(bitboards, bitboard)
     board.turn = aux
 
-    # bitboards = numpy.append(bitboards, [board.turn])
-
-    # bitboards = numpy.append(bitboards, [
-    #     board.has_kingside_castling_rights(chess.WHITE),
-    #     board.has_queenside_castling_rights(chess.WHITE),
-    #     board.has_kingside_castling_rights(chess.BLACK),
-    #     board.has_queenside_castling_rights(chess.BLACK)
-    # ])
-
-    # # Add the check status bits
-    # bitboards = numpy.append(bitboards, [
-    #     board.is_check(),
-    #     board.is_checkmate()
-    # ])
     bitboards = bitboards.reshape(14, 8, 8)
     binary = numpy.frombuffer(bitboards, dtype=numpy.uint8)
     return binary.tobytes()
