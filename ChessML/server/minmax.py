@@ -101,11 +101,11 @@ def handle_game():
             nb_moves = len(list(board.legal_moves))
             # best_move = minimax_root(board, 1)
             if nb_moves > 30:
-                best_move = minimax_root(board, 4)
+                best_move = minimax_root(board, 4, False)
             elif nb_moves > 10 and nb_moves <= 30:
-                best_move = minimax_root(board, 5)
+                best_move = minimax_root(board, 3, False)
             else:
-                best_move = minimax_root(board, 7)
+                best_move = minimax_root(board, 5, False)
                 
             print('Move: ', best_move)
             conn.sendall(best_move.uci().encode())
