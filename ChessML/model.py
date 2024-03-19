@@ -12,7 +12,7 @@ global model
 
 
 class EvaluationModel(pl.LightningModule):
-    def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=6):
+    def __init__(self, learning_rate=1e-3, batch_size=1024, layer_count=8):
         super().__init__()
         self.batch_size = batch_size
         self.learning_rate = learning_rate
@@ -43,23 +43,21 @@ class EvaluationModel(pl.LightningModule):
         # Model V4 with leaky relu and more layers
         layers.append(("linear-0", nn.Linear(896, 4096)))
         layers.append(("batchnorm-0", nn.BatchNorm1d(4096)))  # Add batch normalization
-        layers.append(("leakyrelu-0", nn.LeakyReLU()))
-        layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
+        layers.append(("leakyrelu-0", nn.ReLU()))
+        layers.append(("dropout-0", nn.Dropout(0.4)))  # Add dropout
         layers.append(("linear-1", nn.Linear(4096, 4096)))
         layers.append(("batchnorm-1", nn.BatchNorm1d(4096)))  # Add batch normalization
-        layers.append(("leakyrelu-1", nn.LeakyReLU()))
-        layers.append(("dropout-1", nn.Dropout(0.5)))  # Add dropout
+        layers.append(("leakyrelu-1", nn.ReLU()))
+        layers.append(("dropout-1", nn.Dropout(0.4)))  # Add dropout
         prev = 4096
-        for i in range(2, 6):
+        for i in range(2, layer_count):
             layers.append((f"linear-{i}", nn.Linear(prev, prev // 2)))
-            layers.append(
-                (f"batchnorm-{i}", nn.BatchNorm1d(prev // 2))
-            )  # Add batch normalization
-            layers.append((f"leakyrelu-{i}", nn.LeakyReLU()))
-            layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
+            layers.append((f"batchnorm-{i}", nn.BatchNorm1d(prev // 2)))
+            layers.append((f"leakyrelu-{i}", nn.ReLU()))
+            layers.append((f"dropout-{i}", nn.Dropout(0.4)))
             prev = prev // 2
 
-        layers.append(("linear-6", nn.Linear(prev, 1)))
+        layers.append((f"linear-{layer_count}", nn.Linear(prev, 1)))
 
         self.seq = nn.Sequential(OrderedDict(layers))
 
@@ -76,10 +74,10 @@ class EvaluationModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.parameters(), lr=self.learning_rate, weight_decay=1e-5
         )
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
         return [optimizer], [scheduler]
 
     def train_dataloader(self):
@@ -91,11 +89,11 @@ class EvaluationModel(pl.LightningModule):
 
 if __name__ == "__main__":
     configs = [
-        {"layer_count": 6, "batch_size": 1024},
+        {"layer_count": 8, "batch_size": 256},
     ]
     for config in configs:
         version_name = (
-            f'M6batch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
+            f'GCObatch_size-{config["batch_size"]}-layer_count-{config["layer_count"]}'
         )
         logger = pl.loggers.TensorBoardLogger(
             "lightning_logs", name="chessml", version=version_name
@@ -103,12 +101,12 @@ if __name__ == "__main__":
         early_stop_callback = EarlyStopping(
             monitor="train_loss",
             min_delta=0.00,
-            patience=10,
+            patience=20,
             verbose=False,
             mode="min",
         )
         trainer = pl.Trainer(
-            callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=100
+            callbacks=[early_stop_callback], precision=16, logger=logger, max_epochs=200
         )
         model = EvaluationModel(
             batch_size=config["batch_size"],
