@@ -41,23 +41,25 @@ class EvaluationModel(pl.LightningModule):
         # layers.append(("linear-6", nn.Linear(2048, 1)))
 
         # Model V4 with leaky relu and more layers
-        layers.append(("linear-0", nn.Linear(896, 2048)))
-        layers.append(("batchnorm-0", nn.BatchNorm1d(2048)))  # Add batch normalization
+        layers.append(("linear-0", nn.Linear(896, 4096)))
+        layers.append(("batchnorm-0", nn.BatchNorm1d(4096)))  # Add batch normalization
         layers.append(("leakyrelu-0", nn.LeakyReLU()))
         layers.append(("dropout-0", nn.Dropout(0.5)))  # Add dropout
-        layers.append(("linear-1", nn.Linear(2048, 4096)))
+        layers.append(("linear-1", nn.Linear(4096, 4096)))
         layers.append(("batchnorm-1", nn.BatchNorm1d(4096)))  # Add batch normalization
         layers.append(("leakyrelu-1", nn.LeakyReLU()))
         layers.append(("dropout-1", nn.Dropout(0.5)))  # Add dropout
-        for i in range(2, 4):
-            layers.append((f"linear-{i}", nn.Linear(4096, 4096)))
+        prev = 4096
+        for i in range(2, 6):
+            layers.append((f"linear-{i}", nn.Linear(prev, prev // 2)))
             layers.append(
-                (f"batchnorm-{i}", nn.BatchNorm1d(4096))
+                (f"batchnorm-{i}", nn.BatchNorm1d(prev // 2))
             )  # Add batch normalization
             layers.append((f"leakyrelu-{i}", nn.LeakyReLU()))
             layers.append((f"dropout-{i}", nn.Dropout(0.5)))  # Add dropout
+            prev = prev // 2
 
-        layers.append(("linear-4", nn.Linear(4096, 1)))
+        layers.append(("linear-6", nn.Linear(prev, 1)))
 
         self.seq = nn.Sequential(OrderedDict(layers))
 
