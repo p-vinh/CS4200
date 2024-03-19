@@ -78,8 +78,13 @@ class EvaluationModel(pl.LightningModule):
             self.parameters(), lr=self.learning_rate, weight_decay=1e-5
         )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-        return [optimizer], [scheduler]
-
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "train_loss",
+            }
+        }
     def train_dataloader(self):
         dataset = data_parser.EvaluationDataset()
         return DataLoader(

@@ -15,7 +15,7 @@ EvaluationDataset takes single random row from the SQLite table and preprocesses
 binary value in raw bytes, converting those bytes to floats using numpy's frombuffer and unpackbits functions,
 and forming the required 808 length float array as input. The evaluation value is is extracted and bounded between -15 and 15.
 """
-DEPTH = 30
+DEPTH = 20
 
 
 # ======================AWS RDS MySQL Connection===============================
@@ -215,7 +215,7 @@ def test():
     #     print(f"An error occurred: {e}")
     db = EvaluationDataset()
     # db.delete()
-    db.import_game('./Dataset/lichess_elite_2023-01.pgn')
+    db.import_game('./Dataset/lichess_elite_2022-05.pgn')
     # board = chess.Board("r1b1k1nr/ppp1qppp/8/3P4/3b4/1Pp2PPP/P1Q5/2B2KnR w kq - 0 17")
     # print(stock_fish_eval(board, 16))
     # bin, eval = db.__getitem__(4)

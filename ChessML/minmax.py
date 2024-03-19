@@ -11,7 +11,7 @@ from io import BytesIO
 # If socket doesn't work, use this
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M7batch_size-256-layer_count-6.ckpt"
+    "./checkpoints/GCObatch_size-256-layer_count-8.ckpt"
 )
 
 transposition_table = {}
@@ -36,6 +36,7 @@ def minimax_eval(board):
         piece_values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
         for piece_type, value in piece_values.items():
             if board.is_attacked_by(not board.turn, piece_type):
+                # Only add the value of the piece if the attacking piece is worth more than the threatened piece
                 threatened_piece += value if piece_values[piece_type] > value else -value
         output += threatened_piece # Adds the value of the threatened piece to the evaluation
         # loss = abs(output - result)
