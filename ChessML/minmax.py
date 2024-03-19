@@ -11,7 +11,7 @@ from io import BytesIO
 # If socket doesn't work, use this
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M6batch_size-256-layer_count-6.ckpt"
+    "./checkpoints/M7batch_size-256-layer_count-6.ckpt"
 )
 
 transposition_table = {}
