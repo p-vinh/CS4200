@@ -31,6 +31,13 @@ def minimax_eval(board):
         output = model_chess(board_tensor).item()
         if board.is_checkmate():
             output += -1 if board.turn else 1
+        threatened_piece = 0
+        
+        piece_values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
+        for piece_type, value in piece_values.items():
+            if board.is_attacked_by(not board.turn, piece_type):
+                threatened_piece += value if piece_values[piece_type] > value else -value
+        output += threatened_piece # Adds the value of the threatened piece to the evaluation
         # loss = abs(output - result)
         # print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
         return output
