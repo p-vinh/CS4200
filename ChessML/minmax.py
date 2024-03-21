@@ -7,50 +7,34 @@ import time
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
+import random
 
-# If socket doesn't work, use this
 
 model_chess = EvaluationModel.load_from_checkpoint(
-    "./checkpoints/M6batch_size-256-layer_count-6.ckpt"
+    "./checkpoints/MBDbatch_size-512-layer_count-6.ckpt"
 )
-
-transposition_table = {}
 
 
 # Eval function from the model for the current position
 def minimax_eval(board):
     model_chess.eval()
-    # result = data_parser.stock_fish_eval(board, 24)
 
     byte_board = data_parser.split_bitboard(board)
     byte_board = BytesIO(byte_board)
     binary = np.frombuffer(byte_board.getvalue(), dtype=np.uint8)
     board_tensor = torch.from_numpy(binary.copy()).to(torch.float32)
-
+    
     with torch.no_grad():
         output = model_chess(board_tensor).item()
         if board.is_checkmate():
             output += -1 if board.turn else 1
-        threatened_piece = 0
-        
-        # piece_values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
-        # for piece_type, value in piece_values.items():
-        #     if board.is_attacked_by(not board.turn, piece_type):
-        #         # Only add the value of the piece if the attacking piece is worth more than the threatened piece
-        #         threatened_piece += value if piece_values[piece_type] > value else -value
-        # output += threatened_piece # Adds the value of the threatened piece to the evaluation
-        # loss = abs(output - result)
-        # print(f"Model {output:2f}\nStockfish {result:2f}\nLoss {loss}")
+
         return output
 
 def minimax(board, depth, alpha, beta, maximizing_player):
     if depth == 0 or board.is_game_over():
-        return minimax_eval(board)
-
-    board_hash = hash(board.fen()) # include the turn of the player in the hash
-
-    if board_hash in transposition_table:
-        return transposition_table[board_hash]
+        val = minimax_eval(board)
+        return val
 
     if maximizing_player:
         max_eval = -9999
@@ -63,7 +47,6 @@ def minimax(board, depth, alpha, beta, maximizing_player):
             alpha = max(alpha, max_eval)
             if beta <= alpha:
                 return max_eval
-        transposition_table[board_hash] = max_eval
         return max_eval
     else:
         min_eval = 9999
@@ -76,7 +59,6 @@ def minimax(board, depth, alpha, beta, maximizing_player):
             beta = min(beta, min_eval)
             if beta <= alpha:
                 return min_eval
-        transposition_table[board_hash] = min_eval
         return min_eval
 
 
@@ -106,7 +88,8 @@ def minimax_root(board, depth, maximizing_player=True):
     print("FEN: ", board.fen())
     return best_move
 
-            
+
+
 if __name__ == "__main__":
     board = chess.Board()
     maximizer = False

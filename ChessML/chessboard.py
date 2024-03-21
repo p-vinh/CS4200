@@ -40,6 +40,24 @@ images = {
     "k": pg.image.load("./pieces/bking.png"),
 }
 
+def drawText():
+    letters = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    nums = [8, 7, 6, 5, 4, 3, 2, 1]
+
+    for i in range(8):
+        text = font.render(letters[i], True, white)
+        screen.blit(text, (i * SQ_SIZE + 10, 0))
+
+        text = font.render(letters[i], True, white)
+        screen.blit(text, (i * SQ_SIZE + 10, HEIGHT - 15))
+
+        text = font.render(str(nums[i]), True, white)
+        screen.blit(text, (2, i * SQ_SIZE + 10))
+
+        text = font.render(str(nums[i]), True, white)
+        screen.blit(text, (WIDTH - 15, i * SQ_SIZE + 10))
+
+
           
 def drawBoard():
     for row in range(8):
@@ -102,6 +120,7 @@ def ai_move(board):
     print("Time taken: ", time.time() - start)
     drawBoard()
     drawPieces(board)
+    drawText()
     
     return False
 
@@ -109,6 +128,7 @@ def main():
     pg.display.set_caption("Chess")
     drawBoard()
     drawPieces(board)
+    drawText()
     running = True
     sqSelected = ()
     playerClicks = []
@@ -118,70 +138,71 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 exit()
-            if board.is_checkmate():
-                print(
-                    "Checkmate. {} wins".format(
-                        "White" if board.turn == chess.BLACK else "Black"
-                    )
+        if board.is_checkmate():
+            print(
+                "Checkmate. {} wins".format(
+                    "White" if board.turn == chess.BLACK else "Black"
                 )
-                running = False
-                return
-            if board.is_stalemate():
-                print("Stalemate")
-                running = False
-                return
-            if board.turn == chess.WHITE:
-                if event.type == pg.MOUSEBUTTONDOWN:
-                    location = pg.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
+            )
+            running = False
+            return
+        if board.is_stalemate():
+            print("Stalemate")
+            running = False
+            return
+        if board.turn == chess.WHITE:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                location = pg.mouse.get_pos()
+                col = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
 
-                    if sqSelected == (row, col):
-                        sqSelected = ()
-                        playerClicks = []
-                    else:
-                        sqSelected = (row, col)
-                        playerClicks.append(sqSelected)
+                if sqSelected == (row, col):
+                    sqSelected = ()
+                    playerClicks = []
+                else:
+                    sqSelected = (row, col)
+                    playerClicks.append(sqSelected)
 
-                    if len(playerClicks) == 2:
-                        move = chess.Move(
-                            chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
-                            chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
-                        )
-                        if board.piece_at(move.from_square) is not None:
-                            if (
-                                board.piece_at(move.from_square).piece_type
-                                == chess.PAWN
+                if len(playerClicks) == 2:
+                    move = chess.Move(
+                        chess.square(playerClicks[0][1], 7 - playerClicks[0][0]),
+                        chess.square(playerClicks[1][1], 7 - playerClicks[1][0]),
+                    )
+                    if board.piece_at(move.from_square) is not None:
+                        if (
+                            board.piece_at(move.from_square).piece_type
+                            == chess.PAWN
+                        ):
+                            if move.to_square in chess.SquareSet(
+                                chess.BB_RANK_1 | chess.BB_RANK_8
                             ):
-                                if move.to_square in chess.SquareSet(
-                                    chess.BB_RANK_1 | chess.BB_RANK_8
-                                ):
-                                    move = chess.Move(
-                                        move.from_square,
-                                        move.to_square,
-                                        promotion=chess.QUEEN,
-                                    )
-                        if move in board.legal_moves:
-                            print(move)
-                            board.push(move)
-                        drawBoard()  # Redraw the board
-                        drawPieces(board)  # Update the pieces
-                        sqSelected = ()
-                        playerClicks = []
-                # with chess.engine.SimpleEngine.popen_uci("./stockfish/stockfish-windows-x86-64-avx2.exe") as sf:
-                #     result = sf.analyse(board, chess.engine.Limit(depth=3))
-                #     # Make best move
-                #     move = result.get("pv")[0]
-                #     board.push(move)
-                #     print(move)
-                #     drawBoard()
-                #     drawPieces(board)
-                    
-            else:
-                print("AI's turn")
-                if (ai_move(board)):
-                    running = False
-                    return
+                                move = chess.Move(
+                                    move.from_square,
+                                    move.to_square,
+                                    promotion=chess.QUEEN,
+                                )
+                    if move in board.legal_moves:
+                        print(move)
+                        board.push(move)
+                    drawBoard()
+                    drawPieces(board)
+                    drawText()
+                    sqSelected = ()
+                    playerClicks = []
+            # with chess.engine.SimpleEngine.popen_uci("./stockfish/stockfish-windows-x86-64-avx2.exe") as sf:
+            #     result = sf.analyse(board, chess.engine.Limit(depth=3))
+            #     # Make best move
+            #     move = result.get("pv")[0]
+            #     board.push(move)
+            #     print(move)
+            #     drawBoard()
+            #     drawPieces(board)
+                
+        else:
+            print("AI's turn")
+            if (ai_move(board)):
+                running = False
+                return
 
         clock.tick(60)
         pg.display.flip()
