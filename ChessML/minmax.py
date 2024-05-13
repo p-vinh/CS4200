@@ -100,5 +100,5 @@ if __name__ == "__main__":
         print(board)
         print("Evaluation: ", minimax_eval(board))
         print("Total time: ", time.time() - start)
-        print("Transposition table size: ", len(transposition_table))
+        # print("Transposition table size: ", len(transposition_table))
         maximizer = not maximizer
